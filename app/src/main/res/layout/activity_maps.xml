@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:animateLayoutChanges="true"
+    android:background="@android:color/transparent"
+    android:onClick="cancelTarget"
+    android:orientation="vertical"
+    tools:context="com.app.ariadne.tumrfmap.MapsActivity">
+
+    <fragment
+        android:id="@+id/map"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        class="com.google.android.gms.maps.SupportMapFragment"/>
+
+    <LinearLayout
+        android:id="@+id/thumbnail"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+    </LinearLayout>
+
+    <!--<TextView-->
+    <!--android:id="@+id/editText"-->
+    <!--android:layout_width="400dp"-->
+    <!--android:layout_height="45dp"-->
+    <!--android:layout_below="@+id/thumbnail"-->
+    <!--android:layout_centerHorizontal="true"-->
+    <!--android:layout_marginLeft="20dp"-->
+    <!--android:layout_marginTop="15dp"-->
+    <!--android:background="@drawable/edittext_shadow"-->
+    <!--android:ems="10"-->
+    <!--android:paddingLeft="10dp"-->
+    <!--android:singleLine="true"-->
+    <!--android:text="Enter destination"-->
+    <!--android:textAlignment="viewStart"-->
+    <!--android:textAllCaps="false"-->
+    <!--android:textSize="24sp" />-->
+    <!--android:onClick="onGetNameClick"-->
+
+    <!--<EditText-->
+    <!--android:id="@+id/editText"-->
+    <!--android:layout_width="400dp"-->
+    <!--android:layout_height="45dp"-->
+    <!--android:layout_marginTop="15dp"-->
+    <!--android:layout_below="@+id/thumbnail"-->
+    <!--android:layout_centerHorizontal="true"-->
+    <!--android:background="@drawable/edittext_shadow"-->
+    <!--android:ems="10"-->
+    <!--android:hint="Enter destination"-->
+    <!--android:inputType="textPersonName"-->
+    <!--android:paddingLeft="10dp"-->
+    <!--android:singleLine="true" />-->
+
+    <MultiAutoCompleteTextView
+        android:id="@+id/multiAutoCompleteTextView"
+        android:layout_width="400dp"
+        android:layout_height="45dp"
+        android:layout_below="@+id/thumbnail"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="15dp"
+        android:background="@drawable/edittext_shadow"
+        android:ems="10"
+        android:hint="Enter destination"
+        android:imeOptions="actionDone"
+        android:inputType="textPersonName"
+        android:paddingLeft="10dp"
+        android:singleLine="true" />
+
+    <ImageButton
+        android:id="@+id/cancel_button"
+        android:layout_width="50dp"
+        android:layout_height="45dp"
+        android:layout_alignParentEnd="true"
+        android:layout_alignTop="@+id/multiAutoCompleteTextView"
+        android:layout_marginEnd="5dp"
+        android:background="@android:color/transparent"
+        android:onClick="cancelTarget"
+        android:src="@android:drawable/ic_delete"
+        android:visibility="invisible" />
+
+    <ScrollView
+        android:id="@+id/scrollViewButtons"
+        android:layout_width="50dp"
+        android:layout_height="300dp"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="68dp"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <ToggleButton
+                android:id="@+id/button2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_above="@+id/button1"
+                android:layout_alignParentStart="true"
+                android:text="2"
+                android:textOff="2"
+                android:textOn="2"
+                android:visibility="gone" />
+
+            <ToggleButton
+                android:id="@+id/button1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_above="@+id/button0"
+                android:layout_alignParentStart="true"
+                android:text="1"
+                android:textOff="1"
+                android:textOn="1"
+                android:visibility="gone" />
+
+            <ToggleButton
+                android:id="@+id/button0"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_above="@+id/buttonn1"
+                android:layout_alignParentStart="true"
+                android:text="0"
+                android:textOff="0"
+                android:textOn="0"
+                android:visibility="gone" />
+
+            <ToggleButton
+                android:id="@+id/buttonn1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_above="@+id/buttonn2"
+                android:layout_alignParentStart="true"
+                android:text="-1"
+                android:textOff="-1"
+                android:textOn="-1"
+                android:visibility="gone" />
+
+            <ToggleButton
+                android:id="@+id/buttonn2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_above="@+id/buttonn3"
+                android:layout_alignParentStart="true"
+                android:text="-2"
+                android:textOff="-2"
+                android:textOn="-2"
+                android:visibility="gone" />
+
+            <ToggleButton
+                android:id="@+id/buttonn3"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_above="@+id/buttonn4"
+                android:layout_alignParentStart="true"
+                android:text="-3"
+                android:textOff="-3"
+                android:textOn="-3"
+                android:visibility="gone" />
+
+            <ToggleButton
+                android:id="@+id/buttonn4"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignParentBottom="true"
+                android:layout_alignParentStart="true"
+                android:layout_marginBottom="50dp"
+                android:text="-4"
+                android:textOff="-4"
+                android:textOn="-4"
+                android:visibility="gone" />
+        </LinearLayout>
+    </ScrollView>
+
+    <LinearLayout
+        android:id="@+id/targetDescriptionLayout"
+        android:layout_width="match_parent"
+        android:layout_height="135dp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentStart="true"
+        android:background="#ffffff"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/targetDescriptionHeader"
+            android:layout_width="match_parent"
+            android:layout_height="34dp"
+            android:layout_marginStart="10sp"
+            android:layout_marginTop="5sp"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/targetDescriptionBody"
+            android:layout_width="match_parent"
+            android:layout_height="32dp"
+            android:layout_marginStart="10sp"
+            android:textSize="14sp" />
+
+        <Button
+            android:id="@+id/directions"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentStart="true"
+            android:layout_marginLeft="245dp"
+            android:layout_marginTop="5dp"
+            android:text="Get Directions"
+            android:textAlignment="center"
+            android:textAllCaps="false"
+            android:visibility="visible" />
+
+    </LinearLayout>
+
+</RelativeLayout>
