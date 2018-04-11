@@ -80,7 +80,7 @@
         android:layout_marginEnd="5dp"
         android:background="@android:color/transparent"
         android:onClick="cancelTarget"
-        android:src="@android:drawable/ic_delete"
+        android:src="@android:drawable/ic_menu_close_clear_cancel"
         android:visibility="invisible" />
 
     <ScrollView
@@ -95,6 +95,17 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical">
+
+            <ToggleButton
+                android:id="@+id/button3"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_above="@+id/button2"
+                android:layout_alignParentStart="true"
+                android:text="3"
+                android:textOff="3"
+                android:textOn="3"
+                android:visibility="gone" />
 
             <ToggleButton
                 android:id="@+id/button2"
@@ -204,7 +215,7 @@
 
         <Button
             android:id="@+id/directions"
-            android:layout_width="wrap_content"
+            android:layout_width="130dp"
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
             android:layout_alignParentStart="true"
@@ -213,7 +224,16 @@
             android:text="Get Directions"
             android:textAlignment="center"
             android:textAllCaps="false"
-            android:visibility="visible" />
+            android:visibility="gone" />
+
+        <ImageButton
+            android:id="@+id/revert"
+            android:layout_width="130dp"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="245dp"
+            android:layout_marginTop="5dp"
+            android:src="@android:drawable/ic_menu_revert"
+            android:visibility="gone" />
 
     </LinearLayout>
 

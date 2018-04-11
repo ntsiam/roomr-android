@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.graphics.Point;
 import android.location.LocationManager;
 import android.os.AsyncTask;
@@ -38,6 +39,8 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.Projection;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.CameraPosition;
+import com.google.android.gms.maps.model.Circle;
+import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
@@ -52,13 +55,13 @@ import com.google.android.gms.maps.model.UrlTileProvider;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.StringTokenizer;
 
 import static com.app.ariadne.tumrfmap.geojson.GeoJsonHelper.ListToArrayList;
 import static com.app.ariadne.tumrfmap.geojson.GeoJsonMap.findDestinationFromId;
 import static com.app.ariadne.tumrfmap.geojson.GeoJsonMap.routablePath;
-import static com.app.ariadne.tumrfmap.geojson.GeoJsonMap.targetPointsTagged;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnMyLocationButtonClickListener, GoogleMap.OnCameraIdleListener, View.OnClickListener, AdapterView.OnItemClickListener, GoogleMap.OnMapClickListener {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnMyLocationButtonClickListener, GoogleMap.OnCameraIdleListener, View.OnClickListener, AdapterView.OnItemClickListener, GoogleMap.OnMapClickListener, GoogleMap.OnCircleClickListener {
 
     private GoogleMap mMap;
     private MultiAutoCompleteTextView roomDestination;
@@ -66,6 +69,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     MapLocationListener mapLocationListerner;
     private static final String TAG = "MainActivity";
     public static boolean isFirstTime = true;
+    ToggleButton level3;
     ToggleButton level2;
     ToggleButton level1;
     ToggleButton level0;
@@ -74,16 +78,27 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     ToggleButton leveln3;
     ToggleButton leveln4;
     Button directionsButton;
+    ImageButton revertButton;
     TileOverlay tileOverlay;
     MultiAutoCompleteTextView autoCompleteDestination;
     GeoJSONDijkstra dijkstra;
-    Marker sourceMarker;
+    Circle sourceMarker;
     Marker destinationMarker;
     LatLngWithTags target;
     LatLngWithTags source;
-    Polyline routeLine;
+    int sourceLevel;
+    int destinationLevel;
+    String level;
+    ArrayList<Polyline> routeLines;
     Handler routeHandler = new Handler();
     PolylineOptions routePolylineOptions;
+    PolylineOptions routePolylineOptionsGray;
+    ArrayList<PolylineOptions> routePolylineOptionsInLevels;
+    String sourceName;
+    String targetName;
+    ArrayList<ToggleButton> floorButtonList;
+    private final int MIN_FLOOR = -4;
+    private final int MAX_FLOOR = 3;
 
 
 
@@ -108,7 +123,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private static final BoundingBox GARCHING_MI_BB = new BoundingBox(new LatLng(48.2636, 11.6705), new LatLng(48.2613, 11.6653));
     private static final IndoorBuildingBoundsAndFloors MUENCHNER_FREIHEIT = new IndoorBuildingBoundsAndFloors(MUENCHNER_FREIHEIT_BB, -2, 0);
     private static final IndoorBuildingBoundsAndFloors HAUPTBAHNHOF = new IndoorBuildingBoundsAndFloors(HAUPTBAHNHOF_BB, -4, 0);
-    private static final IndoorBuildingBoundsAndFloors GARCHING_MI = new IndoorBuildingBoundsAndFloors(GARCHING_MI_BB, 0, 2);
+    private static final IndoorBuildingBoundsAndFloors GARCHING_MI = new IndoorBuildingBoundsAndFloors(GARCHING_MI_BB, 0, 3);
     private static final IndoorBuildingBoundsAndFloors[] BOUNDS_FOR_INDOOR_BUTTONS = new IndoorBuildingBoundsAndFloors[] {
             MUENCHNER_FREIHEIT, HAUPTBAHNHOF, GARCHING_MI
     };
@@ -125,6 +140,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mapFragment.getMapAsync(this);
         autoCompleteDestination = findViewById(R.id.multiAutoCompleteTextView);
         autoCompleteDestination.setTokenizer(new SpaceTokenizer());
+        initFloorButtonList();
+        directionsButton = findViewById(R.id.directions);
+        revertButton = findViewById(R.id.revert);
+//        level3.setOnClickListener(this);
+//        level2.setOnClickListener(this);
+//        level1.setOnClickListener(this);
+//        level0.setOnClickListener(this);
+//        leveln1.setOnClickListener(this);
+//        leveln2.setOnClickListener(this);
+//        leveln3.setOnClickListener(this);
+//        leveln4.setOnClickListener(this);
+        directionsButton.setOnClickListener(this);
+        revertButton.setOnClickListener(this);
+
+    }
+
+    private void initFloorButtonList() {
+        level3 = findViewById(R.id.button3);
         level2 = findViewById(R.id.button2);
         level1 = findViewById(R.id.button1);
         level0 = findViewById(R.id.button0);
@@ -132,16 +165,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         leveln2 = findViewById(R.id.buttonn2);
         leveln3 = findViewById(R.id.buttonn3);
         leveln4 = findViewById(R.id.buttonn4);
-        directionsButton = findViewById(R.id.directions);
-        level2.setOnClickListener(this);
-        level1.setOnClickListener(this);
-        level0.setOnClickListener(this);
-        leveln1.setOnClickListener(this);
-        leveln2.setOnClickListener(this);
-        leveln3.setOnClickListener(this);
-        leveln4.setOnClickListener(this);
-        directionsButton.setOnClickListener(this);
-
+        floorButtonList = new ArrayList<>();
+        floorButtonList.add(level3);
+        floorButtonList.add(level2);
+        floorButtonList.add(level1);
+        floorButtonList.add(level0);
+        floorButtonList.add(leveln1);
+        floorButtonList.add(leveln2);
+        floorButtonList.add(leveln3);
+        floorButtonList.add(leveln4);
+        for (ToggleButton button: floorButtonList) {
+            button.setOnClickListener(this);
+        }
     }
 
     void addTileProvider(final String ipAddress, final String level) {
@@ -213,6 +248,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 new LatLng(47.8173, 11.063), new LatLng(48.5361, 12.062));
 
         mMap.setLatLngBoundsForCameraTarget(MUNICH);
+        mMap.setOnCircleClickListener(this);
 
 
         // Add a marker in Sydney and move the camera
@@ -262,8 +298,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         target = null;
         destinationMarker.remove();
         destinationMarker = null;
-//        directionsButton.setVisibility(Button.INVISIBLE);
-
+        directionsButton.setVisibility(Button.GONE);
+        revertButton.setVisibility(ImageButton.GONE);
         LinearLayout descriptionLayout = findViewById(R.id.targetDescriptionLayout);
         descriptionLayout.setVisibility(LinearLayout.GONE);
         TextView descriptionText = findViewById(R.id.targetDescriptionHeader);
@@ -271,13 +307,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         TextView descriptionTextBody = findViewById(R.id.targetDescriptionBody);
         descriptionTextBody.setText("");
 
-        if (sourceMarker != null) {
-            sourceMarker.remove();
-            sourceMarker = null;
+//        if (sourceMarker != null) {
+//            sourceMarker.remove();
+//            sourceMarker = null;
+//        }
+        removeSourceCircle();
+        if (routeLines != null) {
+//            for (int i = 0; i < routeLines.size(); i++) {
+//                routeLines.get(i).remove();
+//            }
+            removeRouteLine();
         }
-        if (routeLine != null) {
-            routeLine.remove();
-        }
+        routePolylineOptionsInLevels = null;
+        routePolylineOptions = null;
 
     }
 
@@ -301,16 +343,55 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         startActivityForResult(getNameScreenIntent, result);
     }
 
-    private void handleRouteRequest(String sourceName, final String targetName) {
+    private boolean isGarchingMIId(String id) {
+        StringTokenizer multiTokenizer = new StringTokenizer(id, ".");
+        int index = 0;
+        String value = "";
+        while (multiTokenizer.hasMoreTokens()) {
+            multiTokenizer.nextToken();
+
+            index++;
+            Log.i(TAG, "MORE tokens");
+        }
+        if (index == 3) {
+            return true;
+        }
+        return false;
+    }
+
+    private int findLevelFromId(String id) {
+        int level = 0;
+        if (isGarchingMIId(id)) {
+            level = Integer.valueOf(id.substring(1,2));
+            Log.i(TAG, "id: " + id + " is from Garching MI, level: " + level);
+        } else {
+            Log.i(TAG, "id: " + id + " is not from Garching MI");
+        }
+        return level;
+    }
+
+    private void handleRouteRequest(final String sourceName, final String targetName) {
         if (!sourceName.equals("Building entrance") & !sourceName.equals("My Location")) {
             source = findDestinationFromId(sourceName);
+            sourceLevel = findLevelFromId(sourceName);
+            Log.i(TAG, "Source level = " + sourceLevel);
+            destinationLevel = findLevelFromId(targetName);
+            Log.i(TAG, "Destination level = " + destinationLevel);
             if (source != null) {
                 Log.i(TAG, "Source found!");
                 target = findDestinationFromId(targetName);
                 if (target != null) {
                     Log.i(TAG, "Destination found!");
                     dijkstra.startDijkstra(source);
-                    routePolylineOptions = dijkstra.getPath(target);
+                    routePolylineOptionsInLevels = null;
+//                    routePolylineOptionsGray = new PolylineOptions().width(15).color(Color.GRAY).zIndex(Integer.MAX_VALUE - 20);
+                    routePolylineOptionsInLevels = dijkstra.getPath(target);
+                    routePolylineOptions = routePolylineOptionsInLevels.get(0);
+//                    for (PolylineOptions polylineOptions: routePolylineOptionsInLevels) {
+//                        for (LatLng latLng: polylineOptions.getPoints()) {
+//                            routePolylineOptionsGray.add(latLng);
+//                        }
+//                    }
                     routeHandler.post(new Runnable() {
                         public void run() {
                             ArrayList<ArrayList<LatLng>> route = new ArrayList<>();
@@ -318,10 +399,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                 route.add(ListToArrayList(routePolylineOptions.getPoints()));
 //                                currentLevel = Integer.valueOf(dijkstra.level);
 //                        moveCameraToStartingPosition();
-                                if (routeLine != null) {
-                                    routeLine.remove();
-                                }
-                                routeLine = mMap.addPolyline(routePolylineOptions);
+//                                if (routeLines != null) {
+//                                    routeLines.remove();
+//                                }
+                                removeRouteLine();
+                                routeLines = new ArrayList<>();
+                                routeLines.add(mMap.addPolyline(routePolylineOptions));
                             }
 //                    System.out.println("Number of points: " + route.get(0).size());
                             if (destinationMarker != null) {
@@ -335,9 +418,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             destinationMarker = mMap.addMarker(new MarkerOptions()
                                     .position(target.getLatlng())
                                     .title(target.getId()));
-                            sourceMarker = mMap.addMarker(new MarkerOptions()
-                                    .position(source.getLatlng())
-                                    .title(source.getId()));
+//                            sourceMarker = mMap.addMarker(new MarkerOptions()
+//                                    .position(source.getLatlng())
+//                                    .title(source.getId()));
+                            addSourceCircle();
+                            setFloorAsChecked(sourceLevel);
 
                             //back on UI thread...
                         }
@@ -353,14 +438,60 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
+    public void setFloorAsChecked(int level) {
+        int indexOfLevelInButtonList = MAX_FLOOR - level;
+        floorButtonList.get(indexOfLevelInButtonList).setChecked(true);
+        clickFloor(level);
+//        switch (level) {
+//            case 3:
+//                level3.setChecked(true);
+//                clickFloor3();
+//                break;
+//            case 2:
+//                level2.setChecked(true);
+//                clickFloor2();
+//                break;
+//            case 1:
+//                level1.setChecked(true);
+//                clickFloor1();
+//                break;
+//            case 0:
+//                level0.setChecked(true);
+//                Log.i(TAG, "Checking level 0");
+//                clickFloor0();
+//                break;
+//            case -1:
+//                leveln1.setChecked(true);
+//                clickFloorn1();
+//                break;
+//            case -2:
+//                leveln2.setChecked(true);
+//                clickFloorn2();
+//                break;
+//            case -3:
+//                leveln3.setChecked(true);
+//                clickFloorn3();
+//                break;
+//            case -4:
+//                leveln4.setChecked(true);
+//                clickFloorn4();
+//                break;
+//            default:
+//                break;
+//        }
+
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         Log.i(TAG, "Return from Activity");
         // Get the users name from the previous Activity
-        final String sourceName = data.getStringExtra("Starting point");
-        final String targetName = data.getStringExtra("Destination");
+        sourceName = data.getStringExtra("Starting point");
+        targetName = data.getStringExtra("Destination");
         Log.i(TAG, "Source: " + sourceName + ", Destination: " + targetName);
+        directionsButton.setVisibility(Button.GONE);
+        revertButton.setVisibility(ImageButton.VISIBLE);
         AsyncTask.execute(new Runnable() {
             @Override
             public void run() {
@@ -415,6 +546,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void setButtonVisibilityBasedOnCameraPosition() {
+        level3.setVisibility(Button.GONE);
         level2.setVisibility(Button.GONE);
         level1.setVisibility(Button.GONE);
         level0.setVisibility(Button.GONE);
@@ -438,112 +570,353 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         ScrollView sv = (ScrollView)findViewById(R.id.scrollViewButtons);
         if (cameraPosition.latitude < maxLat && cameraPosition.latitude > minLat && cameraPosition.longitude < maxLng &&
                 cameraPosition.longitude > minLng && mMap.getCameraPosition().zoom > minZoom) {
-            if (indoorBuildingBoundsAndFloors.getMinFloor() <= -4 && indoorBuildingBoundsAndFloors.getMaxFloor() >= -4) {
-                leveln4.setVisibility(Button.VISIBLE);
+            int floor = MAX_FLOOR;
+            for (ToggleButton button: floorButtonList) {
+                // Here set the corresponding floor button to visible, if the current map includes a layer for the button's floor
+                // The first item in the button list refers to the minimum floor
+                if (indoorBuildingBoundsAndFloors.getMinFloor() <= floor && indoorBuildingBoundsAndFloors.getMaxFloor() >= floor) {
+                    button.setVisibility(ToggleButton.VISIBLE);
+                }
+                floor--;
             }
-            if (indoorBuildingBoundsAndFloors.getMinFloor() <= -3 && indoorBuildingBoundsAndFloors.getMaxFloor() >= -3) {
-                leveln3.setVisibility(Button.VISIBLE);
+//            if (indoorBuildingBoundsAndFloors.getMinFloor() <= -4 && indoorBuildingBoundsAndFloors.getMaxFloor() >= -4) {
+//                leveln4.setVisibility(Button.VISIBLE);
+//            }
+//            if (indoorBuildingBoundsAndFloors.getMinFloor() <= -3 && indoorBuildingBoundsAndFloors.getMaxFloor() >= -3) {
+//                leveln3.setVisibility(Button.VISIBLE);
+//            }
+//            if (indoorBuildingBoundsAndFloors.getMinFloor() <= -2 && indoorBuildingBoundsAndFloors.getMaxFloor() >= -2) {
+//                leveln2.setVisibility(Button.VISIBLE);
+//            }
+//            if (indoorBuildingBoundsAndFloors.getMinFloor() <= -1 && indoorBuildingBoundsAndFloors.getMaxFloor() >= -1) {
+//                leveln1.setVisibility(Button.VISIBLE);
+//            }
+//            if (indoorBuildingBoundsAndFloors.getMinFloor() <= 0 && indoorBuildingBoundsAndFloors.getMaxFloor() >= 0) {
+//                level0.setVisibility(Button.VISIBLE);
+//            }
+//            if (indoorBuildingBoundsAndFloors.getMinFloor() <= 1 && indoorBuildingBoundsAndFloors.getMaxFloor() >= 1) {
+//                level1.setVisibility(Button.VISIBLE);
+//            }
+//            if (indoorBuildingBoundsAndFloors.getMinFloor() <= 2 && indoorBuildingBoundsAndFloors.getMaxFloor() >= 2) {
+//                level2.setVisibility(Button.VISIBLE);
+//            }
+//            if (indoorBuildingBoundsAndFloors.getMinFloor() <= 3 && indoorBuildingBoundsAndFloors.getMaxFloor() >= 3) {
+//                level3.setVisibility(Button.VISIBLE);
+//            }
+        }
+    }
+
+    public void removeRouteLine() {
+//        if (routeLines != null) {
+//            routeLines.remove();
+//        }
+        if (routeLines != null) {
+            for (int i = 0; i < routeLines.size(); i++) {
+                if (routeLines.get(i) != null) {
+                    routeLines.get(i).remove();
+                }
             }
-            if (indoorBuildingBoundsAndFloors.getMinFloor() <= -2 && indoorBuildingBoundsAndFloors.getMaxFloor() >= -2) {
-                leveln2.setVisibility(Button.VISIBLE);
+        }
+        routeLines = null;
+    }
+
+    public void addRouteLine(PolylineOptions polylineOptions) {
+        if (routeLines == null) {
+            routeLines = new ArrayList<>();
+        }
+        routeLines.add(mMap.addPolyline(polylineOptions));
+
+    }
+
+    public int findPolyLineIndex(int level) {
+        int index = Integer.MIN_VALUE;
+        if (sourceLevel == level) {
+            index = 0;
+        } else if (destinationLevel == level) {
+            index = routePolylineOptionsInLevels.size() - 1;
+        } else if (sourceLevel < level && destinationLevel > level) {
+            index = Math.abs(level - sourceLevel);
+        }
+        Log.i(TAG, "Polyline index returned: " + index + ", for level: " + level + ". Levels: " + routePolylineOptionsInLevels.size());
+        return index;
+    }
+
+    public void addRouteLineFromPolyLineOptions(int index) {
+        removeRouteLine();
+        int currentIndex = 0;
+        for (PolylineOptions polylineOptions: routePolylineOptionsInLevels) {
+            routePolylineOptionsGray = new PolylineOptions().width(15).color(Color.GRAY).zIndex(Integer.MAX_VALUE - 20);
+            if (currentIndex != index) {
+                for (LatLng point: polylineOptions.getPoints()) {
+                    routePolylineOptionsGray.add(point);
+                }
             }
-            if (indoorBuildingBoundsAndFloors.getMinFloor() <= -1 && indoorBuildingBoundsAndFloors.getMaxFloor() >= -1) {
-                leveln1.setVisibility(Button.VISIBLE);
+            addRouteLine(routePolylineOptionsGray);
+            currentIndex++;
+        }
+        if (index != Integer.MIN_VALUE) {
+            addRouteLine(routePolylineOptionsInLevels.get(index));
+        }
+
+        removeSourceCircle();
+        addSourceCircle();
+    }
+
+    public void removeSourceCircle() {
+        if (sourceMarker != null) {
+            sourceMarker.remove();
+            sourceMarker = null;
+        }
+    }
+
+    public void addSourceCircle() {
+        CircleOptions circleOptions = new CircleOptions()
+                .center(source.getLatlng())
+                .radius(3.0) // radius in meters
+                .fillColor(0xBB00CCFF) //this is a half transparent blue, change "88" for the transparency
+                .strokeColor(Color.BLUE) //The stroke (border) is blue
+                .strokeWidth(2) // The width is in pixel, so try it!
+                .clickable(true)
+                .zIndex(Integer.MAX_VALUE);
+        sourceMarker = mMap.addCircle(circleOptions);
+        sourceMarker.setClickable(true);
+        sourceMarker.setTag(sourceName);
+    }
+
+    public void clickFloor(int requestedLevel) {
+        level = String.valueOf(requestedLevel);
+        int indexOfLevelInButtonList = MAX_FLOOR - requestedLevel;
+        int currentIndexInButtonList = 0;
+        for (ToggleButton levelButton: floorButtonList) {
+            if (currentIndexInButtonList != indexOfLevelInButtonList) {
+                levelButton.setChecked(false);
+            } else {
+                if (!levelButton.isChecked()) {
+                    level = "0"; //no tiles for "0" - ground floor is ""
+                    if (routePolylineOptionsInLevels != null) {
+                        addRouteLineFromPolyLineOptions(Integer.MIN_VALUE);
+                    }
+                } else {
+                    if (routePolylineOptionsInLevels != null) {
+                        int polyLineIndex = findPolyLineIndex(requestedLevel);
+                        addRouteLineFromPolyLineOptions(polyLineIndex);
+                    }
+                }
             }
-            if (indoorBuildingBoundsAndFloors.getMinFloor() <= 0 && indoorBuildingBoundsAndFloors.getMaxFloor() >= 0) {
-                level0.setVisibility(Button.VISIBLE);
+            currentIndexInButtonList++;
+        }
+    }
+
+    public void clickFloor3() {
+        level = "3";
+        level2.setChecked(false);
+        level1.setChecked(false);
+        level0.setChecked(false);
+        leveln1.setChecked(false);
+        leveln2.setChecked(false);
+        leveln3.setChecked(false);
+        leveln4.setChecked(false);
+        if (!level3.isChecked()) {
+            level = "0"; //no tiles for "0" - ground floor is ""
+            if (routePolylineOptionsInLevels != null) {
+                addRouteLineFromPolyLineOptions(Integer.MIN_VALUE);
             }
-            if (indoorBuildingBoundsAndFloors.getMinFloor() <= 1 && indoorBuildingBoundsAndFloors.getMaxFloor() >= 1) {
-                level1.setVisibility(Button.VISIBLE);
-            }
-            if (indoorBuildingBoundsAndFloors.getMinFloor() <= 2 && indoorBuildingBoundsAndFloors.getMaxFloor() >= 2) {
-                level2.setVisibility(Button.VISIBLE);
+        } else {
+            if (routePolylineOptionsInLevels != null) {
+                int index = findPolyLineIndex(3);
+                addRouteLineFromPolyLineOptions(index);
             }
         }
     }
 
+    public void clickFloor2() {
+        level = "2";
+        level3.setChecked(false);
+        level1.setChecked(false);
+        level0.setChecked(false);
+        leveln1.setChecked(false);
+        leveln2.setChecked(false);
+        leveln3.setChecked(false);
+        leveln4.setChecked(false);
+        if (!level2.isChecked()) {
+            level = "0"; //no tiles for "0" - ground floor is ""
+            if (routePolylineOptionsInLevels != null) {
+                addRouteLineFromPolyLineOptions(Integer.MIN_VALUE);
+            }
+        } else {
+            if (routePolylineOptionsInLevels != null) {
+                int index = findPolyLineIndex(2);
+                addRouteLineFromPolyLineOptions(index);
+            }
+        }
+    }
+
+    public void clickFloor1() {
+        level = "1";
+        level3.setChecked(false);
+        level2.setChecked(false);
+        level0.setChecked(false);
+        leveln1.setChecked(false);
+        leveln2.setChecked(false);
+        leveln3.setChecked(false);
+        leveln4.setChecked(false);
+        if (!level1.isChecked()) {
+            level = "0"; //no tiles for "0" - ground floor is ""
+            if (routePolylineOptionsInLevels != null) {
+                addRouteLineFromPolyLineOptions(Integer.MIN_VALUE);
+            }
+        } else {
+            if (routePolylineOptionsInLevels != null) {
+                int index = findPolyLineIndex(1);
+                addRouteLineFromPolyLineOptions(index);
+            }
+        }
+
+    }
+
+    public void clickFloor0() {
+        level = "";
+        level3.setChecked(false);
+        level1.setChecked(false);
+        level2.setChecked(false);
+        leveln1.setChecked(false);
+        leveln2.setChecked(false);
+        leveln3.setChecked(false);
+        leveln4.setChecked(false);
+        if (!level0.isChecked()) {
+            level = "0"; //no tiles for "0" - ground floor is ""
+            if (routePolylineOptionsInLevels != null) {
+                addRouteLineFromPolyLineOptions(Integer.MIN_VALUE);
+            }
+        } else {
+            if (routePolylineOptionsInLevels != null) {
+                Log.i(TAG, "Find polyline index");
+                int index = findPolyLineIndex(0);
+                addRouteLineFromPolyLineOptions(index);
+            }
+        }
+
+    }
+    public void clickFloorn1() {
+        level = "n1";
+        level3.setChecked(false);
+        level1.setChecked(false);
+        level0.setChecked(false);
+        level2.setChecked(false);
+        leveln2.setChecked(false);
+        leveln3.setChecked(false);
+        leveln4.setChecked(false);
+        if (!leveln1.isChecked()) {
+            level = "0"; //no tiles for "0" - ground floor is ""
+            if (routePolylineOptionsInLevels != null) {
+                addRouteLineFromPolyLineOptions(Integer.MIN_VALUE);
+            }
+        } else {
+            if (routePolylineOptionsInLevels != null) {
+                int index = findPolyLineIndex(-1);
+                addRouteLineFromPolyLineOptions(index);
+            }
+        }
+
+    }
+    public void clickFloorn2() {
+        level = "n2";
+        level3.setChecked(false);
+        level1.setChecked(false);
+        level0.setChecked(false);
+        leveln1.setChecked(false);
+        level2.setChecked(false);
+        leveln3.setChecked(false);
+        leveln4.setChecked(false);
+        if (!leveln2.isChecked()) {
+            level = "0"; //no tiles for "0" - ground floor is ""
+            if (routePolylineOptionsInLevels != null) {
+                addRouteLineFromPolyLineOptions(Integer.MIN_VALUE);
+            }
+        } else {
+            if (routePolylineOptionsInLevels != null) {
+                int index = findPolyLineIndex(-2);
+                addRouteLineFromPolyLineOptions(index);
+            }
+        }
+    }
+    public void clickFloorn3() {
+        level = "n3";
+        Log.i(TAG, "level -3 clicked");
+        level3.setChecked(false);
+        level1.setChecked(false);
+        level0.setChecked(false);
+        leveln1.setChecked(false);
+        level2.setChecked(false);
+        leveln2.setChecked(false);
+        leveln4.setChecked(false);
+        if (!leveln3.isChecked()) {
+            level = "0"; //no tiles for "0" - ground floor is ""
+            if (routePolylineOptionsInLevels != null) {
+                addRouteLineFromPolyLineOptions(Integer.MIN_VALUE);
+            }
+        } else {
+            if (routePolylineOptionsInLevels != null) {
+                int index = findPolyLineIndex(-3);
+                addRouteLineFromPolyLineOptions(index);
+            }
+        }
+
+    }
+    public void clickFloorn4() {
+        level = "n4";
+        level3.setChecked(false);
+        level1.setChecked(false);
+        level0.setChecked(false);
+        leveln1.setChecked(false);
+        level2.setChecked(false);
+        leveln3.setChecked(false);
+        leveln2.setChecked(false);
+        if (!leveln4.isChecked()) {
+            level = "0"; //no tiles for "0" - ground floor is ""
+            if (routePolylineOptionsInLevels != null) {
+                addRouteLineFromPolyLineOptions(Integer.MIN_VALUE);
+            }
+        } else {
+            if (routePolylineOptionsInLevels != null) {
+                int index = findPolyLineIndex(-4);
+                addRouteLineFromPolyLineOptions(index);
+            }
+        }
+    }
+
+
+
     @Override
     public void onClick(View view) {
         String level = "";
-        if (view.getId() == R.id.button2) {
-            level = "2";
-            level1.setChecked(false);
-            level0.setChecked(false);
-            leveln1.setChecked(false);
-            leveln2.setChecked(false);
-            leveln3.setChecked(false);
-            leveln4.setChecked(false);
-            if (!level2.isChecked()) {
-                level = "0"; //no tiles for "0" - ground floor is ""
-            }
+        if (view.getId() == R.id.button3) {
+            clickFloor(3);
+//            clickFloor3();
+        } else if (view.getId() == R.id.button2) {
+            clickFloor(2);
+//            clickFloor2();
         } else if (view.getId() == R.id.button1) {
-            level = "1";
-            level2.setChecked(false);
-            level0.setChecked(false);
-            leveln1.setChecked(false);
-            leveln2.setChecked(false);
-            leveln3.setChecked(false);
-            leveln4.setChecked(false);
-            if (!level1.isChecked()) {
-                level = "0"; //no tiles for "0" - ground floor is ""
-            }
+            clickFloor(1);
+//            clickFloor1();
         } else if (view.getId() == R.id.button0) {
-            level = "";
-            level1.setChecked(false);
-            level2.setChecked(false);
-            leveln1.setChecked(false);
-            leveln2.setChecked(false);
-            leveln3.setChecked(false);
-            leveln4.setChecked(false);
-            if (!level0.isChecked()) {
-                level = "0"; //no tiles for "0" - ground floor is ""
-            }
+            clickFloor(0);
+//            clickFloor0();
         } else if (view.getId() == R.id.buttonn1) {
-            level = "n1";
-            level1.setChecked(false);
-            level0.setChecked(false);
-            level2.setChecked(false);
-            leveln2.setChecked(false);
-            leveln3.setChecked(false);
-            leveln4.setChecked(false);
-            if (!leveln1.isChecked()) {
-                level = "0"; //no tiles for "0" - ground floor is ""
-            }
+            clickFloor(-1);
+//            clickFloorn1();
         } else if (view.getId() == R.id.buttonn2) {
-            level = "n2";
-            level1.setChecked(false);
-            level0.setChecked(false);
-            leveln1.setChecked(false);
-            level2.setChecked(false);
-            leveln3.setChecked(false);
-            leveln4.setChecked(false);
-            if (!leveln2.isChecked()) {
-                level = "0"; //no tiles for "0" - ground floor is ""
-            }
+            clickFloor(-2);
+//            clickFloorn2();
         } else if (view.getId() == R.id.buttonn3) {
-            level = "n3";
-            Log.i(TAG, "level -3 clicked");
-            level1.setChecked(false);
-            level0.setChecked(false);
-            leveln1.setChecked(false);
-            level2.setChecked(false);
-            leveln2.setChecked(false);
-            leveln4.setChecked(false);
-            if (!leveln3.isChecked()) {
-                level = "0"; //no tiles for "0" - ground floor is ""
-            }
+            clickFloor(-3);
+//            clickFloorn3();
         } else if (view.getId() == R.id.buttonn4) {
-            level = "n4";
-            level1.setChecked(false);
-            level0.setChecked(false);
-            leveln1.setChecked(false);
-            level2.setChecked(false);
-            leveln3.setChecked(false);
-            leveln2.setChecked(false);
-            if (!leveln4.isChecked()) {
-                level = "0"; //no tiles for "0" - ground floor is ""
-            }
+            clickFloor(-4);
+//            clickFloorn4();
         } else if (view.getId() == R.id.directions) {
+            onGetNameClick();
+        } else if (view.getId() == R.id.revert) {
             onGetNameClick();
         }
         addTileProvider(TILESERVER_IP, level);
@@ -584,14 +957,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         addMarkerAndZoomCameraOnTarget(destination);
         ImageButton cancelButton = findViewById(R.id.cancel_button);
         cancelButton.setVisibility(Button.VISIBLE);
+        revertButton.setVisibility(ImageButton.GONE);
+        directionsButton.setVisibility(Button.VISIBLE);
 
-//        directionsButton.setVisibility(Button.VISIBLE);
         LinearLayout descriptionLayout = findViewById(R.id.targetDescriptionLayout);
         descriptionLayout.setVisibility(LinearLayout.VISIBLE);
         TextView descriptionText = findViewById(R.id.targetDescriptionHeader);
         descriptionText.setText(String.format("%s, Garching MI Builiding", target.getId()));
         TextView descriptionTextBody = findViewById(R.id.targetDescriptionBody);
         descriptionTextBody.setText("Bolzmanstrasse 3");
+        int level = findLevelFromId(target.getId());
+        Log.i(TAG, "Set floor as checked: " + level);
+        setFloorAsChecked(level);
 
     }
 
@@ -599,5 +976,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapClick(LatLng latLng) {
 //        LinearLayout descriptionLayout = findViewById(R.id.targetDescriptionLayout);
 //        descriptionLayout.setVisibility(LinearLayout.GONE);
+    }
+
+    @Override
+    public void onCircleClick(Circle circle) {
+        Log.i(TAG, "Clicked on circle: " + circle.getTag());
+//        Marker source = mMap.addMarker(new MarkerOptions()
+//                .position(circle.getCenter())
+//                .title(circle.getTag().toString()));
+//        source.setVisible(false);
+//        source.showInfoWindow();
+
     }
 }

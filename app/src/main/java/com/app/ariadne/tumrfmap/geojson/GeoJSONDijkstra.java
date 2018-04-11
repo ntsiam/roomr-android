@@ -1,6 +1,7 @@
 package com.app.ariadne.tumrfmap.geojson;
 
 import android.graphics.Color;
+import android.util.Log;
 
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.PolylineOptions;
@@ -134,26 +135,43 @@ public class GeoJSONDijkstra {
         return path;
     }
 
-    public PolylineOptions getPath(LatLngWithTags destination) {
+    public ArrayList<PolylineOptions> getPath(LatLngWithTags destination) {
         LinkedList<Vertex> path;
         LineString pathLineString;
+        ArrayList<PolylineOptions> polylineOptionsInLevels = new ArrayList<>();
         PolylineOptions polylineOptions = new PolylineOptions().width(15).color(Color.RED).zIndex(Integer.MAX_VALUE - 10);
         ArrayList<LatLng> pathArrayList = new ArrayList<>();
 //        System.out.println("Target: " + vertices.get(index).toString());
             path = getGraphPath(destination);
+            Log.i("GEOJSONDIJKSTRA", "Path found");
             if (path != null) {
+                int prevLevel = Integer.MIN_VALUE;
                 for (Vertex point : path) {
+                    int level = Integer.valueOf(point.getLevel());
                     LatLng nextPoint;
 //                System.out.println("Point: " + point.getId());
                     nextPoint = stringToLatLng(point.getId());
-//                System.out.println("Next point: " + nextPoint.toString());
-                    pathArrayList.add(nextPoint);
-                    polylineOptions.add(nextPoint);
+                    if (prevLevel == level) {
+                        System.out.println("Next point level: " + level);
+
+                        pathArrayList.add(nextPoint);
+                        polylineOptions.add(nextPoint);
+                    } else {
+                        if (prevLevel != Integer.MIN_VALUE) {
+                            polylineOptions.add(nextPoint);
+                            polylineOptionsInLevels.add(polylineOptions);
+                        }
+                        polylineOptions = new PolylineOptions().width(15).color(Color.RED).zIndex(Integer.MAX_VALUE - 10);
+                        pathArrayList.add(nextPoint);
+                        polylineOptions.add(nextPoint);
+                        prevLevel = level;
+                    }
                 }
+                polylineOptionsInLevels.add(polylineOptions);
             } else {
                 System.out.println("Path not found!");
             }
-        return polylineOptions;
+        return polylineOptionsInLevels;
     }
 
     public double getPathLength(LatLngWithTags destination) {
