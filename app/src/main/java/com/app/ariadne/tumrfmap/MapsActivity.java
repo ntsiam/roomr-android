@@ -21,6 +21,7 @@ import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.MultiAutoCompleteTextView;
+import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -102,7 +103,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
 
-    public final String TILESERVER_IP = "10.19.1.52";
+    public final String TILESERVER_IP = "131.159.218.107";
+//    public final String TILESERVER_IP = "10.19.1.52";
     GeoJsonMap geoJsonMap;
 //    public final String TILESERVER_IP = "192.168.1.83";
 
@@ -411,6 +413,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             addSourceCircle();
                             setFloorAsChecked(sourceLevel);
 
+                            ProgressBar progressBar = findViewById(R.id.progressBar2);
+                            progressBar.setVisibility(ProgressBar.GONE);
+
                             //back on UI thread...
                         }
                     });
@@ -426,7 +431,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     public void moveCameraToStartingPosition() {
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(source.getLatlng(), 17));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(source.getLatlng(), 18));
     }
 
 
@@ -446,6 +451,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Log.i(TAG, "Source: " + sourceName + ", Destination: " + targetName);
         directionsButton.setVisibility(Button.GONE);
         revertButton.setVisibility(ImageButton.VISIBLE);
+        ProgressBar progressBar = findViewById(R.id.progressBar2);
+        progressBar.setVisibility(ProgressBar.VISIBLE);
         AsyncTask.execute(new Runnable() {
             @Override
             public void run() {
@@ -612,6 +619,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     public void clickFloor(int requestedLevel) {
         level = String.valueOf(requestedLevel);
+        if (level.equals("0")) {
+            level = "";
+        }
+        Log.i(TAG, "Requested level: " + level);
+        level = level.replace("-", "n");
+        Log.i(TAG, "Requested level after replace: " + level);
         int indexOfLevelInButtonList = MAX_FLOOR - requestedLevel;
         int currentIndexInButtonList = 0;
         for (ToggleButton levelButton: floorButtonList) {
@@ -619,6 +632,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 levelButton.setChecked(false);
             } else {
                 if (!levelButton.isChecked()) {
+                    Log.i(TAG, "Entered here");
                     level = "0"; //no tiles for "0" - ground floor is ""
                     if (routePolylineOptionsInLevels != null) {
                         addRouteLineFromPolyLineOptions(Integer.MIN_VALUE);
@@ -636,7 +650,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onClick(View view) {
-        String level = "";
         if (view.getId() == R.id.button3) {
             clickFloor(3);
         } else if (view.getId() == R.id.button2) {
