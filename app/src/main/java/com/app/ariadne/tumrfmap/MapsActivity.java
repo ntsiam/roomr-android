@@ -103,7 +103,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
 
-    public final String TILESERVER_IP = "131.159.218.107";
+//    public final String TILESERVER_IP = "131.159.218.107";
+    public final String TILESERVER_IP = "ec2-52-14-40-155.us-east-2.compute.amazonaws.com";
 //    public final String TILESERVER_IP = "10.19.1.52";
     GeoJsonMap geoJsonMap;
 //    public final String TILESERVER_IP = "192.168.1.83";
@@ -701,7 +702,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
 //        Toast.makeText(this, "i = " + i + ", l = " + l + ", view: " + view.toString(), Toast.LENGTH_LONG).show();
-        InputMethodManager in = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        InputMethodManager in = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE); //Hide keyboard
         in.hideSoftInputFromWindow(view.getApplicationWindowToken(), 0);
         LatLngWithTags destination = getDestination();
         addMarkerAndZoomCameraOnTarget(destination);
