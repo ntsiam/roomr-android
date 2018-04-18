@@ -40,7 +40,7 @@
     <!--android:textAlignment="viewStart"-->
     <!--android:textAllCaps="false"-->
     <!--android:textSize="24sp" />-->
-    <!--android:onClick="onGetNameClick"-->
+    <!--android:onClick="onFindOriginDestinationClick"-->
 
     <!--<EditText-->
     <!--android:id="@+id/editText"-->
@@ -56,27 +56,58 @@
     <!--android:paddingLeft="10dp"-->
     <!--android:singleLine="true" />-->
 
-    <MultiAutoCompleteTextView
-        android:id="@+id/multiAutoCompleteTextView"
+    <!--<MultiAutoCompleteTextView-->
+        <!--android:id="@+id/multiAutoCompleteTextView"-->
+        <!--android:layout_width="400dp"-->
+        <!--android:layout_height="45dp"-->
+        <!--android:layout_below="@+id/thumbnail"-->
+        <!--android:layout_centerHorizontal="true"-->
+        <!--android:layout_marginTop="15dp"-->
+        <!--android:background="@drawable/edittext_shadow"-->
+        <!--android:ems="10"-->
+        <!--android:hint="Enter destination"-->
+        <!--android:imeOptions="actionDone"-->
+        <!--android:inputType="textPersonName"-->
+        <!--android:paddingLeft="10dp"-->
+        <!--android:singleLine="true" />-->
+
+    <!--<MultiAutoCompleteTextView-->
+        <!--android:id="@+id/multiAutoCompleteTextView"-->
+        <!--android:layout_width="400dp"-->
+        <!--android:layout_height="45dp"-->
+        <!--android:layout_below="@+id/thumbnail"-->
+        <!--android:layout_centerHorizontal="true"-->
+        <!--android:layout_marginTop="15dp"-->
+        <!--android:background="@drawable/edittext_shadow"-->
+        <!--android:ems="10"-->
+        <!--android:hint="Enter destination"-->
+        <!--android:imeOptions="actionDone"-->
+        <!--android:inputType="textPersonName"-->
+        <!--android:paddingLeft="10dp"-->
+        <!--android:singleLine="true" />-->
+
+    <EditText
+        android:id="@+id/findDestination"
         android:layout_width="400dp"
         android:layout_height="45dp"
         android:layout_below="@+id/thumbnail"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="15dp"
+        android:paddingLeft="10dp"
         android:background="@drawable/edittext_shadow"
         android:ems="10"
         android:hint="Enter destination"
-        android:imeOptions="actionDone"
-        android:inputType="textPersonName"
-        android:paddingLeft="10dp"
-        android:singleLine="true" />
+        android:inputType="text"
+        android:focusable="false"
+        android:onClick="onFindDestinationClick" />
+
 
     <ImageButton
         android:id="@+id/cancel_button"
         android:layout_width="50dp"
         android:layout_height="45dp"
         android:layout_alignParentEnd="true"
-        android:layout_alignTop="@+id/multiAutoCompleteTextView"
+        android:layout_alignTop="@+id/findDestination"
         android:layout_marginEnd="5dp"
         android:background="@android:color/transparent"
         android:onClick="cancelTarget"
@@ -250,5 +281,4 @@
         android:max="@android:integer/config_mediumAnimTime"
         android:progress="@android:integer/config_mediumAnimTime"
         android:visibility="gone" />
-
 </RelativeLayout>

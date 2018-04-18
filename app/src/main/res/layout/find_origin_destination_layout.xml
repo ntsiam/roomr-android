@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:gravity="left"
+    android:padding="20dp">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_centerInParent="true">
+
+        <!--<TextView-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:text="@string/enter_name_text_view"/>-->
+
+        <!--<EditText-->
+        <!--android:layout_width="185dp"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:id="@+id/users_name_edit_text"/>-->
+
+        <AutoCompleteTextView
+            android:id="@+id/starting_point"
+            android:layout_width="240dp"
+            android:layout_height="45dp"
+            android:layout_alignParentTop="true"
+            android:layout_centerHorizontal="true"
+            android:background="@drawable/edittext_shadow"
+            android:ems="10"
+            android:hint="Enter starting position"
+            android:inputType="textPersonName"
+            android:paddingLeft="10dp"
+            android:singleLine="true" />
+
+        <Button
+            android:id="@+id/button3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="118dp"
+            android:onClick="onSendUsersName"
+            android:text="Get Directions" />
+
+        <AutoCompleteTextView
+            android:id="@+id/destination"
+            android:layout_width="240dp"
+            android:layout_height="45dp"
+            android:layout_alignParentTop="true"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="57dp"
+            android:background="@drawable/edittext_shadow"
+            android:ems="10"
+            android:hint="Destination"
+            android:inputType="textPersonName"
+            android:paddingLeft="10dp"
+            android:singleLine="true" />
+
+        <ImageButton
+            android:id="@+id/imageButton11"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_alignParentTop="true"
+            android:layout_marginTop="32dp"
+            android:layout_toEndOf="@+id/starting_point"
+            android:background="@android:color/transparent"
+            android:src="@mipmap/ic_swap_vert_1" />
+    </RelativeLayout>
+
+</RelativeLayout>

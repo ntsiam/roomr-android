@@ -12,12 +12,15 @@ import android.os.Handler;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.text.Layout;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.MultiAutoCompleteTextView;
@@ -82,6 +85,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     ImageButton revertButton;
     TileOverlay tileOverlay;
     MultiAutoCompleteTextView autoCompleteDestination;
+//    EditText editText;
     GeoJSONDijkstra dijkstra;
     Circle sourceMarker;
     Marker destinationMarker;
@@ -100,6 +104,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     ArrayList<ToggleButton> floorButtonList;
     private final int MIN_FLOOR = -4;
     private final int MAX_FLOOR = 3;
+    EditText destinationEditText;
 
 
 
@@ -130,20 +135,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
-        roomDestination = (MultiAutoCompleteTextView) findViewById(R.id.multiAutoCompleteTextView);
+//        roomDestination = (MultiAutoCompleteTextView) findViewById(R.id.multiAutoCompleteTextView);
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
-        autoCompleteDestination = findViewById(R.id.multiAutoCompleteTextView);
-        autoCompleteDestination.setTokenizer(new SpaceTokenizer());
+//        autoCompleteDestination = findViewById(R.id.multiAutoCompleteTextView);
+//        autoCompleteDestination.setTokenizer(new SpaceTokenizer());
+//        editText = findViewById(R.id.editText);
+//        editText.setOnClickListener(this);
         initFloorButtonList();
         directionsButton = findViewById(R.id.directions);
         revertButton = findViewById(R.id.revert);
         directionsButton.setOnClickListener(this);
         revertButton.setOnClickListener(this);
-
+        destinationEditText = findViewById(R.id.findDestination);
     }
 
     private void initFloorButtonList() {
@@ -213,11 +220,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             tileOverlay.clearTileCache();
             tileOverlay.remove();
         }
-        tileOverlay = mMap.addTileOverlay(new TileOverlayOptions()
-                .tileProvider(tileProvider)
-                .zIndex(Float.MAX_VALUE)
-                .fadeIn(false)
-                .transparency(0.0f));
+//        tileOverlay = mMap.addTileOverlay(new TileOverlayOptions()
+//                .tileProvider(tileProvider)
+//                .zIndex(Float.MAX_VALUE)
+//                .fadeIn(false)
+//                .transparency(0.0f));
+
     }
 
     void requestPermissionToAccessLocation() {
@@ -236,10 +244,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.setMinZoomPreference(10.0f);
         LatLngBounds MUNICH = new LatLngBounds(
                 new LatLng(47.8173, 11.063), new LatLng(48.5361, 12.062));
-
+        mMap.setOnMapClickListener(this);
         mMap.setLatLngBoundsForCameraTarget(MUNICH);
         mMap.setOnCircleClickListener(this);
-
 
         // Add a marker in Sydney and move the camera
         LatLng munich = new LatLng(48.137, 11.574);
@@ -267,8 +274,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         dijkstra = new GeoJSONDijkstra(routablePath);
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
                 android.R.layout.simple_dropdown_item_1line, geoJsonMap.targetPointsIds);
-        autoCompleteDestination.setAdapter(adapter);
-        autoCompleteDestination.setOnItemClickListener(this);
+//        autoCompleteDestination.setAdapter(adapter);
+//        autoCompleteDestination.setOnItemClickListener(this);
 
         mMap.setMyLocationEnabled(true);
         mMap.setOnMyLocationButtonClickListener(this);
@@ -280,9 +287,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
+    private void removeDestinationDescription() {
+        LinearLayout descriptionLayout = findViewById(R.id.targetDescriptionLayout);
+        descriptionLayout.setVisibility(LinearLayout.GONE);
+        TextView descriptionText = findViewById(R.id.targetDescriptionHeader);
+        descriptionText.setText("");
+        TextView descriptionTextBody = findViewById(R.id.targetDescriptionBody);
+        descriptionTextBody.setText("");
+    }
+
 
     public void cancelTarget(View view) {
-        autoCompleteDestination.setText("");
+//        autoCompleteDestination.setText("");
         ImageButton cancelButton = findViewById(R.id.cancel_button);
         cancelButton.setVisibility(Button.INVISIBLE);
         target = null;
@@ -290,12 +306,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         destinationMarker = null;
         directionsButton.setVisibility(Button.GONE);
         revertButton.setVisibility(ImageButton.GONE);
-        LinearLayout descriptionLayout = findViewById(R.id.targetDescriptionLayout);
-        descriptionLayout.setVisibility(LinearLayout.GONE);
-        TextView descriptionText = findViewById(R.id.targetDescriptionHeader);
-        descriptionText.setText("");
-        TextView descriptionTextBody = findViewById(R.id.targetDescriptionBody);
-        descriptionTextBody.setText("");
+        destinationEditText.setText("");
+        removeDestinationDescription();
 
 //        if (sourceMarker != null) {
 //            sourceMarker.remove();
@@ -313,9 +325,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
-    public void onGetNameClick() {
+    public void onFindOriginDestinationClick() {
 
-        Intent getNameScreenIntent = new Intent(this, FindDestinationActivity.class);
+        Intent getNameScreenIntent = new Intent(this, FindOriginDestinationActivity.class);
 
         // We ask for the Activity to start and don't expect a result to be sent back
         // startActivity(getNameScreenIntent);
@@ -332,6 +344,27 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         startActivityForResult(getNameScreenIntent, result);
     }
+
+    public void onFindDestinationClick(View view) {
+
+        Intent findDestinationIntent = new Intent(this, FindDestinationActivity.class);
+
+        // We ask for the Activity to start and don't expect a result to be sent back
+        // startActivity(getNameScreenIntent);
+
+        // We use startActivityForResult when we expect a result to be sent back
+
+        final int result = 1;
+
+        // To send data use putExtra with a String name followed by its value
+
+        findDestinationIntent.putExtra("callingActivity", "MapsActivity");
+//        getDestinationScreenIntent.putExtra("destination", target.getId());
+
+
+        startActivityForResult(findDestinationIntent, result);
+    }
+
 
     private boolean isGarchingMIId(String id) {
         StringTokenizer multiTokenizer = new StringTokenizer(id, ".");
@@ -447,21 +480,31 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         super.onActivityResult(requestCode, resultCode, data);
         Log.i(TAG, "Return from Activity");
         // Get the users name from the previous Activity
-        sourceName = data.getStringExtra("Starting point");
-        targetName = data.getStringExtra("Destination");
-        Log.i(TAG, "Source: " + sourceName + ", Destination: " + targetName);
-        directionsButton.setVisibility(Button.GONE);
-        revertButton.setVisibility(ImageButton.VISIBLE);
-        ProgressBar progressBar = findViewById(R.id.progressBar2);
-        progressBar.setVisibility(ProgressBar.VISIBLE);
-        AsyncTask.execute(new Runnable() {
-            @Override
-            public void run() {
-                handleRouteRequest(sourceName, targetName);
-                //TODO your background code
+        String activityWeReturnedFrom = data.getStringExtra("Activity Name");
+        if (activityWeReturnedFrom.equals("FindDestinationActivity")) {
+            Log.i(TAG, "Returned from Destination activity");
+            String destination = data.getStringExtra("Destination");
+            if (destination != null) {
+                Log.i(TAG, "Destination: " + destination);
+                setDestinationOnMap(destination);
             }
-        });
+        } else {
+            sourceName = data.getStringExtra("Starting point");
+            targetName = data.getStringExtra("Destination");
+            Log.i(TAG, "Source: " + sourceName + ", Destination: " + targetName);
+            directionsButton.setVisibility(Button.GONE);
+            revertButton.setVisibility(ImageButton.VISIBLE);
+            ProgressBar progressBar = findViewById(R.id.progressBar2);
+            progressBar.setVisibility(ProgressBar.VISIBLE);
+            AsyncTask.execute(new Runnable() {
+                @Override
+                public void run() {
+                    handleRouteRequest(sourceName, targetName);
+                    //TODO your background code
+                }
+            });
 
+        }
     }
 
     void initLocationUpdates() {
@@ -651,6 +694,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onClick(View view) {
+        Log.i(TAG, "onClick");
         if (view.getId() == R.id.button3) {
             clickFloor(3);
         } else if (view.getId() == R.id.button2) {
@@ -668,18 +712,25 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         } else if (view.getId() == R.id.buttonn4) {
             clickFloor(-4);
         } else if (view.getId() == R.id.directions) {
-            onGetNameClick();
+            onFindOriginDestinationClick();
         } else if (view.getId() == R.id.revert) {
-            onGetNameClick();
+            onFindOriginDestinationClick();
+        } else if (view.getId() == R.id.targetDescriptionLayout) {
+//            LinearLayout descriptionLayout = findViewById(R.id.targetDescriptionLayout);
+//            descriptionLayout.setOnClickListener(null);
+//            ViewGroup.LayoutParams params = descriptionLayout.getLayoutParams();
+//            params.height = 200;
+//            descriptionLayout.setLayoutParams(params);
+
         }
         addTileProvider(TILESERVER_IP, level);
     }
 
     private LatLngWithTags getDestination() {
-        String destinationName = autoCompleteDestination.getText().toString();
-        destinationName = destinationName.substring(0, destinationName.length() - 1);
+//        String destinationName = autoCompleteDestination.getText().toString();
+//        destinationName = destinationName.substring(0, destinationName.length() - 1);
 //        Toast.makeText(this, "Destination: " + destinationName, Toast.LENGTH_LONG).show();
-        target = findDestinationFromId(destinationName);
+//        target = findDestinationFromId(destinationName);
         if (target != null) {
             return target;
         } else {
@@ -697,6 +748,33 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         destinationMarker = mMap.addMarker(new MarkerOptions().position(target.getLatlng())
                 .title(target.getId()));
         mMap.animateCamera(CameraUpdateFactory.newCameraPosition(new CameraPosition(target.getLatlng(), 18, mMap.getCameraPosition().tilt, mMap.getCameraPosition().bearing)));
+    }
+
+    private void setDestinationOnMap(String destinationId) {
+        target = findDestinationFromId(destinationId);
+        if (target != null) {
+//            destinationEditText = findViewById(R.id.findDestination);
+            destinationEditText.setText(destinationId);
+            addMarkerAndZoomCameraOnTarget(target);
+            ImageButton cancelButton = findViewById(R.id.cancel_button);
+            cancelButton.setVisibility(Button.VISIBLE);
+            revertButton.setVisibility(ImageButton.GONE);
+            directionsButton.setVisibility(Button.VISIBLE);
+            addDestinationDescription();
+
+            int level = findLevelFromId(target.getId());
+            Log.i(TAG, "Set floor as checked: " + level);
+            setFloorAsChecked(level);
+        }
+    }
+
+    private void addDestinationDescription() {
+        LinearLayout descriptionLayout = findViewById(R.id.targetDescriptionLayout);
+        descriptionLayout.setVisibility(LinearLayout.VISIBLE);
+        TextView descriptionText = findViewById(R.id.targetDescriptionHeader);
+        descriptionText.setText(String.format("%s, Garching MI Builiding", target.getId()));
+        TextView descriptionTextBody = findViewById(R.id.targetDescriptionBody);
+        descriptionTextBody.setText("Bolzmanstrasse 3");
     }
 
     @Override
@@ -725,8 +803,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onMapClick(LatLng latLng) {
-//        LinearLayout descriptionLayout = findViewById(R.id.targetDescriptionLayout);
-//        descriptionLayout.setVisibility(LinearLayout.GONE);
+        LinearLayout descriptionLayout = findViewById(R.id.targetDescriptionLayout);
+//        if (descriptionLayout.getVisibility() == LinearLayout.VISIBLE) {
+//            ViewGroup.LayoutParams params = descriptionLayout.getLayoutParams();
+//            params.height = 50;
+//            descriptionLayout.setLayoutParams(params);
+//            Log.i(TAG, "clicked on map: " + latLng.toString());
+//            descriptionLayout.setOnClickListener(this);
+//            descriptionLayout.setVisibility(LinearLayout.GONE);
+//        }
     }
 
     @Override

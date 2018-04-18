@@ -3,18 +3,27 @@ package com.app.ariadne.tumrfmap;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
-import android.widget.TextView;
+import android.widget.ListView;
 
 import com.app.ariadne.tumrfmap.geojson.GeoJsonMap;
+import com.app.ariadne.tumrfmap.util.EditTextWatcher;
+
+import java.util.ArrayList;
 
 public class FindDestinationActivity extends Activity implements AdapterView.OnItemClickListener{
     String givenDestinationName;
+    ArrayAdapter adapterForDestination;
+    ArrayList<String> idsForDestination;
+    EditText destination;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -29,17 +38,26 @@ public class FindDestinationActivity extends Activity implements AdapterView.OnI
         // Get the data that was sent
 
         String previousActivity = activityThatCalled.getExtras().getString("callingActivity");
-        givenDestinationName = activityThatCalled.getExtras().getString("destination");
-        AutoCompleteTextView autoCompleteDestination = findViewById(R.id.destination);
-        autoCompleteDestination.setText(givenDestinationName);
-        AutoCompleteTextView autoCompleteSource = findViewById(R.id.starting_point);
-        autoCompleteSource.setText("My location");
+//        givenDestinationName = activityThatCalled.getExtras().getString("destination");
+//        AutoCompleteTextView autoCompleteDestination = findViewById(R.id.destination);
+//        autoCompleteDestination.setText(givenDestinationName);
+//        AutoCompleteTextView autoCompleteSource = findViewById(R.id.starting_point);
+//        autoCompleteSource.setText("My location");
 
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
-                android.R.layout.simple_dropdown_item_1line, GeoJsonMap.sourcePointsIds);
-        autoCompleteDestination.setAdapter(adapter);
-        autoCompleteSource.setAdapter(adapter);
-        autoCompleteDestination.setOnItemClickListener(this);
+        ArrayList<String> ids = new ArrayList<>(GeoJsonMap.sourcePointsIds);
+        final ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
+                android.R.layout.simple_dropdown_item_1line, ids);
+
+
+        destination = findViewById(R.id.destination_autocomplete);
+        ListView destinationList = findViewById(R.id.destination_list);
+        idsForDestination = new ArrayList<>(GeoJsonMap.sourcePointsIds);
+        this.adapterForDestination =  new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, idsForDestination);
+        destinationList.setAdapter(this.adapterForDestination);
+        EditTextWatcher destinationTextWatcher = new EditTextWatcher(adapterForDestination);
+        destination.addTextChangedListener(destinationTextWatcher);
+
+        destinationList.setOnItemClickListener(this);
 
 
 //        TextView callingActivityMessage = (TextView)
@@ -48,24 +66,27 @@ public class FindDestinationActivity extends Activity implements AdapterView.OnI
 //        callingActivityMessage.append(" " + previousActivity);
     }
 
-    public void onSendUsersName(View view) {
+    public void onSendDestinationId(View view) {
 
         // Get the users name from the EditText
-        AutoCompleteTextView destination = findViewById(R.id.destination);
-        AutoCompleteTextView source = findViewById(R.id.starting_point);
+//        AutoCompleteTextView destination = findViewById(R.id.destination);
+//        AutoCompleteTextView source = findViewById(R.id.starting_point);
 
         // Get the name typed into the EditText
+//        String destinationName = String.valueOf(destination.getText());
+//        String sourceName = String.valueOf(source.getText());
+
         String destinationName = String.valueOf(destination.getText());
-        String sourceName = String.valueOf(source.getText());
 
         if (destinationName == null) {
-            destinationName = givenDestinationName;
+            destinationName = "";
         }
         // Define our intention to go back to ActivityMain
         Intent goingBack = new Intent();
 
         // Define the String name and the value to assign to it
-        goingBack.putExtra("Starting point", sourceName);
+//        goingBack.putExtra("Starting point", sourceName);
+        goingBack.putExtra("Activity Name", "FindDestinationActivity");
         goingBack.putExtra("Destination", destinationName);
 
         // Sends data back to the parent and can use RESULT_CANCELED, RESULT_OK, or any
@@ -80,6 +101,9 @@ public class FindDestinationActivity extends Activity implements AdapterView.OnI
 
     @Override
     public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-        Log.i("SECOND", "View clicked: " + view.getId());
+        Log.i("SECOND", "Item clicked: " + idsForDestination.get(i));
+        destination.setText(idsForDestination.get(i));
+        adapterForDestination.clear();
+        onSendDestinationId(view);
     }
 }
