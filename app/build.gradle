@@ -30,5 +30,7 @@ dependencies {
     compile 'com.google.maps.android:android-maps-utils:0.5'
     compile 'com.google.guava:guava:23.3-android'
     compile 'org.apache.commons:commons-math3:3.6.1'
+    compile 'com.android.volley:volley:1.1.0' //For downloading
+
     testCompile 'junit:junit:4.12'
 }

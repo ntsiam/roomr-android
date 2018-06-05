@@ -139,7 +139,7 @@ public class GeoJSONDijkstra {
         LinkedList<Vertex> path;
         LineString pathLineString;
         ArrayList<PolylineOptions> polylineOptionsInLevels = new ArrayList<>();
-        PolylineOptions polylineOptions = new PolylineOptions().width(15).color(Color.RED).zIndex(Integer.MAX_VALUE - 10);
+        PolylineOptions polylineOptions = new PolylineOptions().width(15).color(Color.RED).zIndex(Integer.MAX_VALUE - 1000);
         ArrayList<LatLng> pathArrayList = new ArrayList<>();
 //        System.out.println("Target: " + vertices.get(index).toString());
             path = getGraphPath(destination);
@@ -161,7 +161,7 @@ public class GeoJSONDijkstra {
                             polylineOptions.add(nextPoint);
                             polylineOptionsInLevels.add(polylineOptions);
                         }
-                        polylineOptions = new PolylineOptions().width(15).color(Color.RED).zIndex(Integer.MAX_VALUE - 10);
+                        polylineOptions = new PolylineOptions().width(15).color(Color.RED).zIndex(Integer.MAX_VALUE - 1000);
                         pathArrayList.add(nextPoint);
                         polylineOptions.add(nextPoint);
                         prevLevel = level;

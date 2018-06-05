@@ -3,10 +3,10 @@
     "type":"FeatureCollection",
     "generator":"JOSM",
     "description": {
-        "address": "Bolzmannstraße 3",
+        "address": "Boltzmannstraße 3",
         "plz": "85748",
         "city": "Garching bei München",
-        "building": "Mathematics Informatics Building"
+        "building": "TUM Department of Informatics And Mathematics"
     },
     "features":[
         {
@@ -47539,6 +47539,11 @@
             "type":"Feature",
             "properties":{
                 "highway":"corridor",
+                "id":"entrance",
+                "address": "Boltzmannstraße 3",
+                "plz": "85748",
+                "city": "Garching bei München",
+                "building": "TUM Department of Informatics And Mathematics",
                 "level":"0"
             },
             "geometry":{

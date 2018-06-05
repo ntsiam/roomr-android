@@ -36,6 +36,7 @@ import com.app.ariadne.tumrfmap.geojson.GeoJsonMap;
 import com.app.ariadne.tumrfmap.geojson.IndoorBuildingBoundsAndFloors;
 import com.app.ariadne.tumrfmap.geojson.LatLngWithTags;
 import com.app.ariadne.tumrfmap.listeners.MapLocationListener;
+import com.app.ariadne.tumrfmap.tileProvider.CustomMapTileProvider;
 import com.app.ariadne.tumrfmap.util.SpaceTokenizer;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -109,7 +110,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
 //    public final String TILESERVER_IP = "131.159.218.107";
-    public final String TILESERVER_IP = "ec2-52-14-40-155.us-east-2.compute.amazonaws.com";
+    public final String TILESERVER_IP = "ec2-18-191-35-229.us-east-2.compute.amazonaws.com";
 //    public final String TILESERVER_IP = "10.19.1.52";
     GeoJsonMap geoJsonMap;
 //    public final String TILESERVER_IP = "192.168.1.83";
@@ -177,55 +178,34 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     void addTileProvider(final String ipAddress, final String level) {
+//        http://ec2-18-191-35-229.us-east-2.compute.amazonaws.com/hot
 
-
-        TileProvider tileProvider = new UrlTileProvider(256, 256) {
-            @Override
-            public URL getTileUrl(int x, int y, int zoom) {
-
-                /* Define the URL pattern for the tile images */
-//                String s = String.format("http://10.19.1.52/hot/%d/%d/%d.png",
-                String s = String.format("http://" + ipAddress + "/hot" + level + "/%d/%d/%d.png",
-                        zoom, x, y);
-                Log.i(TAG, "Server: " + s);
-                if (!checkTileExists(x, y, zoom)) {
-                    return null;
-                }
-
-                try {
-                    return new URL(s);
-                } catch (MalformedURLException e) {
-                    throw new AssertionError(e);
-                }
+        TileProvider tileProvider;
+        Log.i(TAG, "Add tiles, level: " + level);
+        if (!level.equals("")) {
+            CustomMapTileProvider customMapTileProvider = new CustomMapTileProvider(getResources().getAssets(), this);
+            int usedLevel = 0;
+            if (!level.equals("")) {
+                usedLevel = Integer.valueOf(level);
             }
-
-            /*
-             * Check that the tile server supports the requested x, y and zoom.
-             * Complete this stub according to the tile range you support.
-             * If you support a limited range of tiles at different zoom levels, then you
-             * need to define the supported x, y range at each zoom level.
-             */
-            private boolean checkTileExists(int x, int y, int zoom) {
-                int minZoom = 4;
-                int maxZoom = 25;
-
-                if ((zoom < minZoom || zoom > maxZoom)) {
-                    return false;
-                }
-
-                return true;
+            customMapTileProvider.setLevel(usedLevel);
+            tileProvider = customMapTileProvider;
+            if (tileOverlay != null) {
+//            tileOverlay.clearTileCache();
+                tileOverlay.remove();
             }
-        };
-        if (tileOverlay != null) {
-            tileOverlay.clearTileCache();
-            tileOverlay.remove();
+            tileOverlay = mMap.addTileOverlay(new TileOverlayOptions()
+                    .tileProvider(tileProvider)
+                    .zIndex(100)
+                    .fadeIn(false)
+                    .transparency(0.0f));
+        } else {
+            Log.i(TAG, "Remove tiles");
+            if (tileOverlay != null) {
+//            tileOverlay.clearTileCache();
+                tileOverlay.remove();
+            }
         }
-//        tileOverlay = mMap.addTileOverlay(new TileOverlayOptions()
-//                .tileProvider(tileProvider)
-//                .zIndex(Float.MAX_VALUE)
-//                .fadeIn(false)
-//                .transparency(0.0f));
-
     }
 
     void requestPermissionToAccessLocation() {
@@ -438,9 +418,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                 sourceMarker.remove();
                                 sourceMarker = null;
                             }
-                            destinationMarker = mMap.addMarker(new MarkerOptions()
-                                    .position(target.getLatlng())
-                                    .title(target.getId()));
 //                            sourceMarker = mMap.addMarker(new MarkerOptions()
 //                                    .position(source.getLatlng())
 //                                    .title(source.getId()));
@@ -650,7 +627,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void addSourceCircle() {
         CircleOptions circleOptions = new CircleOptions()
                 .center(source.getLatlng())
-                .radius(3.0) // radius in meters
+                .radius(1.0) // radius in meters
                 .fillColor(0xBB00CCFF) //this is a half transparent blue, change "88" for the transparency
                 .strokeColor(Color.BLUE) //The stroke (border) is blue
                 .strokeWidth(2) // The width is in pixel, so try it!
@@ -664,7 +641,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void clickFloor(int requestedLevel) {
         level = String.valueOf(requestedLevel);
         if (level.equals("0")) {
-            level = "";
+//            level = "";
         }
         Log.i(TAG, "Requested level: " + level);
         level = level.replace("-", "n");
@@ -677,7 +654,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             } else {
                 if (!levelButton.isChecked()) {
                     Log.i(TAG, "Entered here");
-                    level = "0"; //no tiles for "0" - ground floor is ""
+                    level = ""; //no tiles for "0" - ground floor is ""
                     if (routePolylineOptionsInLevels != null) {
                         addRouteLineFromPolyLineOptions(Integer.MIN_VALUE);
                     }

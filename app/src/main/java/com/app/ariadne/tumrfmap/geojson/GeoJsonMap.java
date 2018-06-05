@@ -16,6 +16,7 @@ import com.google.maps.android.data.geojson.GeoJsonFeature;
 import com.google.maps.android.data.geojson.GeoJsonLayer;
 
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -24,7 +25,7 @@ import java.util.ArrayList;
 
 public class GeoJsonMap {
     GeoJsonLayer indoorGeometryLayer;
-    GeoJsonLayer indoorTopologyLayer;
+    ArrayList<GeoJsonLayer> indoorTopologyLayer;
     private GoogleMap mMap;
     private ArrayList<Circle> particleMarkers;
     public static LatLng weightedAverage;
@@ -47,6 +48,7 @@ public class GeoJsonMap {
     public static LatLngWithTags startingPoint;
     public ArrayList<String> mapLevels = new ArrayList<>();
     public ArrayList<ArrayList<GeoJsonFeature>> mapInLevels = new ArrayList<>();
+    public static final int[] mapSources = {R.raw.indoor_path_ga_mi};
 
 
 
@@ -180,28 +182,36 @@ public class GeoJsonMap {
 
 
     public void addIndoorTopologyToMap(Layer.OnFeatureClickListener listener) {
-        indoorTopologyLayer.getDefaultLineStringStyle().setVisible(false);
-        indoorTopologyLayer.getDefaultPointStyle().setVisible(false);
-        indoorTopologyLayer.setOnFeatureClickListener(listener);
-        indoorTopologyLayer.addLayerToMap();
+        for (GeoJsonLayer indoorLayer: indoorTopologyLayer) {
+            indoorLayer.getDefaultLineStringStyle().setVisible(false);
+            indoorLayer.getDefaultPointStyle().setVisible(false);
+            indoorLayer.setOnFeatureClickListener(listener);
+            indoorLayer.addLayerToMap();
+        }
     }
 
     public void loadIndoorTopology(Context appContext) {
         resetGlobalPathVariables();
         sourcePointsIds.add("My Location");
         sourcePointsIds.add("Entrance of building");
+        indoorTopologyLayer = new ArrayList<>();
+        ArrayList<JSONObject> geojsonMaps = new ArrayList<>();
         try {
-            indoorTopologyLayer = new GeoJsonLayer(mMap, R.raw.indoor_path_ga_mi,
-                    appContext);
+            for (int mapSource: mapSources) {
+                indoorTopologyLayer.add(new GeoJsonLayer(mMap, mapSource,
+                        appContext));
 //            indoorTopologyLayer = new GeoJsonLayer(mMap, R.raw.munchner_freiheit,
 //                    appContext);
-            Log.d(TAG, "indoorTopology: " + indoorTopologyLayer);
+                Log.d(TAG, "indoorTopology: " + indoorTopologyLayer);
+            }
         } catch (JSONException | IOException e) {
             System.out.println("Error while loading Geojson data!!");
             e.printStackTrace();
             return;
         }
-        processIndoorPathFeatures(indoorTopologyLayer);
+        for (GeoJsonLayer indoorLayer: indoorTopologyLayer) {
+            processIndoorPathFeatures(indoorLayer);
+        }
 
         interpolatedCorridors = GeoJsonHelper.interpolateLinesLatLng(corridors);
 //            interpolatedLines = interpolateLines(latLngArrayList);
@@ -228,7 +238,7 @@ public class GeoJsonMap {
     }
 
     private void processIndoorPathFeatures(GeoJsonLayer indoorPathLayer) {
-//        System.out.println("process!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        System.out.println("process!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
         Iterable<GeoJsonFeature> features = indoorPathLayer.getFeatures();
         ArrayList<GeoJsonFeature> featureArrayList = Lists.newArrayList(features);
         for (GeoJsonFeature feature : featureArrayList) {
