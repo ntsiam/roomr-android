@@ -38,6 +38,7 @@ import com.app.ariadne.tumrfmap.geojson.IndoorBuildingBoundsAndFloors;
 import com.app.ariadne.tumrfmap.geojson.LatLngWithTags;
 import com.app.ariadne.tumrfmap.listeners.LocationButtonClickListener;
 import com.app.ariadne.tumrfmap.listeners.MapLocationListener;
+import com.app.ariadne.tumrfmap.map.MapUIElementsManager;
 import com.app.ariadne.tumrfmap.tileProvider.CustomMapTileProvider;
 import com.app.ariadne.tumrfmap.util.SpaceTokenizer;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -68,6 +69,7 @@ import java.util.StringTokenizer;
 import static com.app.ariadne.tumrfmap.geojson.GeoJsonHelper.ListToArrayList;
 import static com.app.ariadne.tumrfmap.geojson.GeoJsonMap.findDestinationFromId;
 import static com.app.ariadne.tumrfmap.geojson.GeoJsonMap.routablePath;
+import static com.app.ariadne.tumrfmap.map.MapUIElementsManager.MAX_FLOOR;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnCameraIdleListener, View.OnClickListener, AdapterView.OnItemClickListener, GoogleMap.OnMapClickListener, GoogleMap.OnCircleClickListener {
 
@@ -87,33 +89,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     ImageButton revertButton;
     TileOverlay tileOverlay;
     MultiAutoCompleteTextView autoCompleteDestination;
-//    EditText editText;
     GeoJSONDijkstra dijkstra;
     Circle sourceMarker;
     Marker destinationMarker;
-    LatLngWithTags target;
-    LatLngWithTags source;
-    int sourceLevel;
-    int destinationLevel;
-    String level;
-    ArrayList<Polyline> routeLines;
     Handler routeHandler = new Handler();
-    PolylineOptions routePolylineOptions;
-    PolylineOptions routePolylineOptionsGray;
-    ArrayList<PolylineOptions> routePolylineOptionsInLevels;
-    String sourceName;
-    String targetName;
     ArrayList<ToggleButton> floorButtonList;
-    private final int MIN_FLOOR = -4;
-    private final int MAX_FLOOR = 3;
     EditText destinationEditText;
-
-
+    MapUIElementsManager mapUIElementsManager;
 
     public final String TILESERVER_IP = "ec2-18-191-35-229.us-east-2.compute.amazonaws.com";
     GeoJsonMap geoJsonMap;
-//    public final String TILESERVER_IP = "192.168.1.83";
-
 
     public static final int MY_PERMISSIONS_REQUEST_FINE_LOCATION = 1;
 
@@ -151,6 +136,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         directionsButton.setOnClickListener(this);
         revertButton.setOnClickListener(this);
         destinationEditText = findViewById(R.id.findDestination);
+
     }
 
     private void initFloorButtonList() {
@@ -176,7 +162,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    void addTileProvider(final String ipAddress, final String level) {
+    void addTileProvider(final String level) {
         TileProvider tileProvider;
         Log.i(TAG, "Add tiles, level: " + level);
         if (!level.equals("")) {
@@ -256,11 +242,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //        autoCompleteDestination.setOnItemClickListener(this);
 
         mMap.setMyLocationEnabled(true);
-//        mMap.setOnMyLocationButtonClickListener(this);
         mMap.setPadding(0,150,0,0);
         Toast.makeText(this, "Camera position: " + mMap.getCameraPosition(), Toast.LENGTH_SHORT).show();
 
         mMap.setOnMyLocationButtonClickListener(new LocationButtonClickListener(this, mMap));
+        mapUIElementsManager = new MapUIElementsManager(this, floorButtonList, mMap);
 
     }
 
@@ -278,7 +264,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //        autoCompleteDestination.setText("");
         ImageButton cancelButton = findViewById(R.id.cancel_button);
         cancelButton.setVisibility(Button.INVISIBLE);
-        target = null;
+        mapUIElementsManager.target = null;
         if (destinationMarker!= null) {
             destinationMarker.remove();
         }
@@ -288,59 +274,37 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         destinationEditText.setText("");
         removeDestinationDescription();
 
-//        if (sourceMarker != null) {
-//            sourceMarker.remove();
-//            sourceMarker = null;
-//        }
-        removeSourceCircle();
-        if (routeLines != null) {
-//            for (int i = 0; i < routeLines.size(); i++) {
-//                routeLines.get(i).remove();
-//            }
-            removeRouteLine();
+        mapUIElementsManager.removeSourceCircle();
+        if (mapUIElementsManager.routeLines != null) {
+            mapUIElementsManager.removeRouteLine();
         }
-        routePolylineOptionsInLevels = null;
-        routePolylineOptions = null;
+        mapUIElementsManager.routePolylineOptionsInLevels = null;
+        mapUIElementsManager.routePolylineOptions = null;
 
     }
 
     public void onFindOriginDestinationClick() {
-
         Intent getNameScreenIntent = new Intent(this, FindOriginDestinationActivity.class);
-
         // We ask for the Activity to start and don't expect a result to be sent back
         // startActivity(getNameScreenIntent);
-
         // We use startActivityForResult when we expect a result to be sent back
-
         final int result = 1;
 
         // To send data use putExtra with a String name followed by its value
-
         getNameScreenIntent.putExtra("callingActivity", "MapsActivity");
-        getNameScreenIntent.putExtra("destination", target.getId());
-
-
+        getNameScreenIntent.putExtra("destination", mapUIElementsManager.target.getId());
         startActivityForResult(getNameScreenIntent, result);
     }
 
     public void onFindDestinationClick(View view) {
-
         Intent findDestinationIntent = new Intent(this, FindDestinationActivity.class);
-
         // We ask for the Activity to start and don't expect a result to be sent back
         // startActivity(getNameScreenIntent);
-
         // We use startActivityForResult when we expect a result to be sent back
-
         final int result = 1;
-
         // To send data use putExtra with a String name followed by its value
-
         findDestinationIntent.putExtra("callingActivity", "MapsActivity");
 //        getDestinationScreenIntent.putExtra("destination", target.getId());
-
-
         startActivityForResult(findDestinationIntent, result);
     }
 
@@ -348,17 +312,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private boolean isGarchingMIId(String id) {
         StringTokenizer multiTokenizer = new StringTokenizer(id, ".");
         int index = 0;
-        String value = "";
         while (multiTokenizer.hasMoreTokens()) {
             multiTokenizer.nextToken();
 
             index++;
             Log.i(TAG, "MORE tokens");
         }
-        if (index == 3) {
-            return true;
-        }
-        return false;
+        return index == 3;
     }
 
     private int findLevelFromId(String id) {
@@ -374,40 +334,35 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private void handleRouteRequest(final String sourceName, final String targetName) {
         if (!sourceName.equals("Building entrance") & !sourceName.equals("My Location")) {
-            source = findDestinationFromId(sourceName);
-            sourceLevel = findLevelFromId(sourceName);
-            Log.i(TAG, "Source level = " + sourceLevel);
-            destinationLevel = findLevelFromId(targetName);
-            Log.i(TAG, "Destination level = " + destinationLevel);
-            if (source != null) {
+            mapUIElementsManager.source = findDestinationFromId(sourceName);
+            mapUIElementsManager.sourceLevel = findLevelFromId(sourceName);
+            Log.i(TAG, "Source level = " + mapUIElementsManager.sourceLevel);
+            mapUIElementsManager.destinationLevel = findLevelFromId(targetName);
+            Log.i(TAG, "Destination level = " + mapUIElementsManager.destinationLevel);
+            if (mapUIElementsManager.source != null) {
                 Log.i(TAG, "Source found!");
-                target = findDestinationFromId(targetName);
-                if (target != null) {
+                mapUIElementsManager.target = findDestinationFromId(targetName);
+                if (mapUIElementsManager.target != null) {
                     Log.i(TAG, "Destination found!");
-                    dijkstra.startDijkstra(source);
-                    routePolylineOptionsInLevels = null;
+                    dijkstra.startDijkstra(mapUIElementsManager.source);
+                    mapUIElementsManager.routePolylineOptionsInLevels = null;
 //                    routePolylineOptionsGray = new PolylineOptions().width(15).color(Color.GRAY).zIndex(Integer.MAX_VALUE - 20);
-                    routePolylineOptionsInLevels = dijkstra.getPath(target);
-                    if (routePolylineOptionsInLevels != null && routePolylineOptionsInLevels.size() > 0) {
-                        routePolylineOptions = routePolylineOptionsInLevels.get(0);
-//                    for (PolylineOptions polylineOptions: routePolylineOptionsInLevels) {
-//                        for (LatLng latLng: polylineOptions.getPoints()) {
-//                            routePolylineOptionsGray.add(latLng);
-//                        }
-//                    }
+                    mapUIElementsManager.routePolylineOptionsInLevels = dijkstra.getPath(mapUIElementsManager.target);
+                    if (mapUIElementsManager.routePolylineOptionsInLevels != null && mapUIElementsManager.routePolylineOptionsInLevels.size() > 0) {
+                        mapUIElementsManager.routePolylineOptions = mapUIElementsManager.routePolylineOptionsInLevels.get(0);
                         routeHandler.post(new Runnable() {
                             public void run() {
                                 ArrayList<ArrayList<LatLng>> route = new ArrayList<>();
-                                if (routePolylineOptions != null && routePolylineOptions.getPoints().size() > 0) {
-                                    route.add(ListToArrayList(routePolylineOptions.getPoints()));
+                                if (mapUIElementsManager.routePolylineOptions != null && mapUIElementsManager.routePolylineOptions.getPoints().size() > 0) {
+                                    route.add(ListToArrayList(mapUIElementsManager.routePolylineOptions.getPoints()));
 //                                currentLevel = Integer.valueOf(dijkstra.level);
                                     moveCameraToStartingPosition();
 //                                if (routeLines != null) {
 //                                    routeLines.remove();
 //                                }
-                                    removeRouteLine();
-                                    routeLines = new ArrayList<>();
-                                    routeLines.add(mMap.addPolyline(routePolylineOptions));
+                                    mapUIElementsManager.removeRouteLine();
+                                    mapUIElementsManager.routeLines = new ArrayList<>();
+                                    mapUIElementsManager.routeLines.add(mMap.addPolyline(mapUIElementsManager.routePolylineOptions));
                                 }
 //                    System.out.println("Number of points: " + route.get(0).size());
                                 if (destinationMarker != null) {
@@ -418,11 +373,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                     sourceMarker.remove();
                                     sourceMarker = null;
                                 }
-//                            sourceMarker = mMap.addMarker(new MarkerOptions()
-//                                    .position(source.getLatlng())
-//                                    .title(source.getId()));
-                                addSourceCircle();
-                                setFloorAsChecked(sourceLevel);
+                                mapUIElementsManager.addSourceCircle();
+                                setFloorAsChecked(mapUIElementsManager.sourceLevel);
 
                                 ProgressBar progressBar = findViewById(R.id.progressBar2);
                                 progressBar.setVisibility(ProgressBar.GONE);
@@ -445,14 +397,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     public void moveCameraToStartingPosition() {
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(source.getLatlng(), 18));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(mapUIElementsManager.source.getLatlng(), 18));
     }
 
 
     public void setFloorAsChecked(int level) {
         int indexOfLevelInButtonList = MAX_FLOOR - level;
         floorButtonList.get(indexOfLevelInButtonList).setChecked(true);
-        addTileProvider(TILESERVER_IP, String.valueOf(level));
+        addTileProvider(String.valueOf(level));
         clickFloor(level);
     }
 
@@ -472,9 +424,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     setDestinationOnMap(destination);
                 }
             } else {
-                sourceName = data.getStringExtra("Starting point");
-                targetName = data.getStringExtra("Destination");
-                Log.i(TAG, "Source: " + sourceName + ", Destination: " + targetName);
+                mapUIElementsManager.sourceName = data.getStringExtra("Starting point");
+                mapUIElementsManager.targetName = data.getStringExtra("Destination");
+                Log.i(TAG, "Source: " + mapUIElementsManager.sourceName + ", Destination: " + mapUIElementsManager.targetName);
                 directionsButton.setVisibility(Button.GONE);
                 revertButton.setVisibility(ImageButton.VISIBLE);
                 ProgressBar progressBar = findViewById(R.id.progressBar2);
@@ -482,7 +434,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 AsyncTask.execute(new Runnable() {
                     @Override
                     public void run() {
-                        handleRouteRequest(sourceName, targetName);
+                        handleRouteRequest(mapUIElementsManager.sourceName, mapUIElementsManager.targetName);
                         //TODO your background code
                     }
                 });
@@ -533,87 +485,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    public void removeRouteLine() {
-        if (routeLines != null) {
-            for (int i = 0; i < routeLines.size(); i++) {
-                if (routeLines.get(i) != null) {
-                    routeLines.get(i).remove();
-                }
-            }
-        }
-        routeLines = null;
-    }
-
-    public void addRouteLine(PolylineOptions polylineOptions) {
-        if (routeLines == null) {
-            routeLines = new ArrayList<>();
-        }
-        routeLines.add(mMap.addPolyline(polylineOptions));
-
-    }
-
-    public int findPolyLineIndex(int level) {
-        int index = Integer.MIN_VALUE;
-        if (sourceLevel == level) {
-            index = 0;
-        } else if (destinationLevel == level) {
-            index = routePolylineOptionsInLevels.size() - 1;
-        } else if (sourceLevel < level && destinationLevel > level) {
-            index = Math.abs(level - sourceLevel);
-        }
-        Log.i(TAG, "Polyline index returned: " + index + ", for level: " + level + ". Levels: " + routePolylineOptionsInLevels.size());
-        return index;
-    }
-
-    public void addRouteLineFromPolyLineOptions(int index) {
-        removeRouteLine();
-        int currentIndex = 0;
-        for (PolylineOptions polylineOptions: routePolylineOptionsInLevels) {
-            routePolylineOptionsGray = new PolylineOptions().width(20).color(Color.GRAY).zIndex(Integer.MAX_VALUE - 20);
-            if (currentIndex != index) {
-                for (LatLng point: polylineOptions.getPoints()) {
-                    routePolylineOptionsGray.add(point);
-                }
-            }
-            addRouteLine(routePolylineOptionsGray);
-            routePolylineOptionsGray.clickable(true);
-            currentIndex++;
-        }
-        if (index != Integer.MIN_VALUE) {
-            addRouteLine(routePolylineOptionsInLevels.get(index));
-            routePolylineOptionsGray.clickable(true);
-        }
-
-        removeSourceCircle();
-        addSourceCircle();
-    }
-
-    public void removeSourceCircle() {
-        if (sourceMarker != null) {
-            sourceMarker.remove();
-            sourceMarker = null;
-        }
-    }
-
-    public void addSourceCircle() {
-        CircleOptions circleOptions = new CircleOptions()
-                .center(source.getLatlng())
-                .radius(1.0) // radius in meters
-                .fillColor(0xBB00CCFF) //this is a half transparent blue, change "88" for the transparency
-                .strokeColor(Color.BLUE) //The stroke (border) is blue
-                .strokeWidth(2) // The width is in pixel, so try it!
-                .clickable(true)
-                .zIndex(Integer.MAX_VALUE);
-        sourceMarker = mMap.addCircle(circleOptions);
-        sourceMarker.setClickable(true);
-        sourceMarker.setTag(sourceName);
-    }
-
     public void clickFloor(int requestedLevel) {
+        String level;
         level = String.valueOf(requestedLevel);
-        if (level.equals("0")) {
-//            level = "";
-        }
         Log.i(TAG, "Requested level: " + level);
         level = level.replace("-", "n");
         Log.i(TAG, "Requested level after replace: " + level);
@@ -625,19 +499,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             } else {
                 if (!levelButton.isChecked()) {
                     Log.i(TAG, "Entered here");
-                    level = ""; //no tiles for "0" - ground floor is ""
-                    if (routePolylineOptionsInLevels != null) {
-                        addRouteLineFromPolyLineOptions(Integer.MIN_VALUE);
+                    level = ""; //no tiles for ""
+                    if (mapUIElementsManager.routePolylineOptionsInLevels != null) {
+                        mapUIElementsManager.addRouteLineFromPolyLineOptions(Integer.MIN_VALUE);
                     }
                 } else {
-                    if (routePolylineOptionsInLevels != null) {
-                        int polyLineIndex = findPolyLineIndex(requestedLevel);
-                        addRouteLineFromPolyLineOptions(polyLineIndex);
+                    if (mapUIElementsManager.routePolylineOptionsInLevels != null) {
+                        int polyLineIndex = mapUIElementsManager.findPolyLineIndex(requestedLevel);
+                        mapUIElementsManager.addRouteLineFromPolyLineOptions(polyLineIndex);
                     }
                 }
             }
             currentIndexInButtonList++;
         }
+        mapUIElementsManager.level = level;
     }
 
     @Override
@@ -671,7 +546,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //            descriptionLayout.setLayoutParams(params);
 
         }
-        addTileProvider(TILESERVER_IP, level);
+        addTileProvider(mapUIElementsManager.level);
     }
 
     private LatLngWithTags getDestination() {
@@ -679,8 +554,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //        destinationName = destinationName.substring(0, destinationName.length() - 1);
 //        Toast.makeText(this, "Destination: " + destinationName, Toast.LENGTH_LONG).show();
 //        target = findDestinationFromId(destinationName);
-        if (target != null) {
-            return target;
+        if (mapUIElementsManager.target != null) {
+            return mapUIElementsManager.target;
         } else {
             return null;
         }
@@ -699,18 +574,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void setDestinationOnMap(String destinationId) {
-        target = findDestinationFromId(destinationId);
-        if (target != null) {
+        mapUIElementsManager.target = findDestinationFromId(destinationId);
+        if (mapUIElementsManager.target != null) {
 //            destinationEditText = findViewById(R.id.findDestination);
             destinationEditText.setText(destinationId);
-            addMarkerAndZoomCameraOnTarget(target);
+            addMarkerAndZoomCameraOnTarget(mapUIElementsManager.target);
             ImageButton cancelButton = findViewById(R.id.cancel_button);
             cancelButton.setVisibility(Button.VISIBLE);
             revertButton.setVisibility(ImageButton.GONE);
             directionsButton.setVisibility(Button.VISIBLE);
             addDestinationDescription();
 
-            int level = findLevelFromId(target.getId());
+            int level = findLevelFromId(mapUIElementsManager.target.getId());
             Log.i(TAG, "Set floor as checked: " + level);
             setFloorAsChecked(level);
         }
@@ -720,7 +595,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         LinearLayout descriptionLayout = findViewById(R.id.targetDescriptionLayout);
         descriptionLayout.setVisibility(LinearLayout.VISIBLE);
         TextView descriptionText = findViewById(R.id.targetDescriptionHeader);
-        descriptionText.setText(String.format("%s, Garching MI Builiding", target.getId()));
+        descriptionText.setText(String.format("%s, Garching MI Builiding", mapUIElementsManager.target.getId()));
         TextView descriptionTextBody = findViewById(R.id.targetDescriptionBody);
         descriptionTextBody.setText("Bolzmanstrasse 3");
     }
@@ -744,7 +619,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //        descriptionText.setText(String.format("%s, Garching MI Builiding", target.getId()));
 //        TextView descriptionTextBody = findViewById(R.id.targetDescriptionBody);
 //        descriptionTextBody.setText("Bolzmanstrasse 3");
-        int level = findLevelFromId(target.getId());
+        int level = findLevelFromId(mapUIElementsManager.target.getId());
         Log.i(TAG, "Set floor as checked: " + level);
         setFloorAsChecked(level);
     }
@@ -754,10 +629,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         LinearLayout descriptionLayout = findViewById(R.id.targetDescriptionLayout);
         double minDistance = 100.0;
         //TODO: handle negative levels
-        int levelToShow = Integer.valueOf(level);
-        if (routePolylineOptionsInLevels != null) {
+        int levelToShow = Integer.valueOf(mapUIElementsManager.level);
+        if (mapUIElementsManager.routePolylineOptionsInLevels != null) {
             int currLevel = 0;
-            for (PolylineOptions routeLevel : routePolylineOptionsInLevels) {
+            for (PolylineOptions routeLevel : mapUIElementsManager.routePolylineOptionsInLevels) {
                 for (LatLng point : routeLevel.getPoints()) {
                     double tmpDistance = SphericalUtil.computeDistanceBetween(point, latLng);
                     if (tmpDistance < minDistance) {

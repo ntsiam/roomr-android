@@ -7,8 +7,6 @@ import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 
 import com.app.ariadne.tumrfmap.MapsActivity;
-import com.app.ariadne.tumrfmap.map.MapManager;
-import com.app.ariadne.tumrfmap.map.MapUIElements;
 import com.google.android.gms.maps.GoogleMap;
 
 import static android.content.Context.LOCATION_SERVICE;
@@ -19,13 +17,13 @@ public class LocationButtonClickListener implements GoogleMap.OnMyLocationButton
     LocationManager locationManager;
 //    MapManager mapManager;
     MapLocationListener mapLocationListener;
-//    MapUIElements mapUIElements;
+//    MapUIElementsManager mapUIElementsManager;
     GoogleMap mMap;
     private static final String TAG = "LocationButtonListener";
 
-//    public LocationButtonClickListener(MapManager mapManager, Context context, MapUIElements mapUIElements) {
+//    public LocationButtonClickListener(MapManager mapManager, Context context, MapUIElementsManager mapUIElementsManager) {
 //        this.context = context;
-//        this.mapUIElements = mapUIElements;
+//        this.mapUIElementsManager = mapUIElementsManager;
 //    }
 
     public LocationButtonClickListener(Context context, GoogleMap mMap) {
