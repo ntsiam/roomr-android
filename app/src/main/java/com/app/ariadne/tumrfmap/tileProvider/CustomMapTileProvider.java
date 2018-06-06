@@ -20,7 +20,7 @@ public class CustomMapTileProvider implements TileProvider {
     private static final int BUFFER_SIZE = 16 * 1024;
 
     private AssetManager mAssets;
-    private int level;
+    private String level;
     Context context;
     FileDownloader fileDownloader;
     String path;
@@ -35,7 +35,7 @@ public class CustomMapTileProvider implements TileProvider {
 
     }
 
-    public void setLevel(int level) {
+    public void setLevel(String level) {
         this.level = level;
     }
 
@@ -80,14 +80,14 @@ public class CustomMapTileProvider implements TileProvider {
     private String getTileFilename(int level, int x, int y, int zoom) {
         return path + "map" + "/" + zoom + '/' + level + "/" + x + '/' + y + ".png";
     }
-    private String getDestinationPath(int level, int x, int zoom) {
+    private String getDestinationPath(String level, int x, int zoom) {
         return path + "map" + "/" + zoom + '/' + level + "/" + x + '/';
     }
     private String getFilename(int y) {
         return y + ".png";
     }
 
-    private String getUrl(int level, int x, int y, int zoom) {
+    private String getUrl(String level, int x, int y, int zoom) {
         String ipAddress = "ec2-18-191-35-229.us-east-2.compute.amazonaws.com";
         String lvlStr = String.valueOf(level);
         if (lvlStr.equals("0")) {

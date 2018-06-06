@@ -184,10 +184,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Log.i(TAG, "Add tiles, level: " + level);
         if (!level.equals("")) {
             CustomMapTileProvider customMapTileProvider = new CustomMapTileProvider(getResources().getAssets(), this);
-            int usedLevel = 0;
-            if (!level.equals("")) {
-                usedLevel = Integer.valueOf(level);
-            }
+//            String usedLevel = "0";
+//            if (!level.equals("")) {
+              String usedLevel = level;
+//            }
             customMapTileProvider.setLevel(usedLevel);
             tileProvider = customMapTileProvider;
             if (tileOverlay != null) {
@@ -261,7 +261,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.setOnMyLocationButtonClickListener(this);
         mMap.setPadding(0,150,0,0);
         Toast.makeText(this, "Camera position: " + mMap.getCameraPosition(), Toast.LENGTH_SHORT).show();
-        addTileProvider(TILESERVER_IP, "0");
 
 //        mMap.setOnMyLocationClickListener(this);
 
@@ -449,6 +448,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void setFloorAsChecked(int level) {
         int indexOfLevelInButtonList = MAX_FLOOR - level;
         floorButtonList.get(indexOfLevelInButtonList).setChecked(true);
+        addTileProvider(TILESERVER_IP, String.valueOf(level));
         clickFloor(level);
     }
 
@@ -775,7 +775,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         int level = findLevelFromId(target.getId());
         Log.i(TAG, "Set floor as checked: " + level);
         setFloorAsChecked(level);
-
     }
 
     @Override
