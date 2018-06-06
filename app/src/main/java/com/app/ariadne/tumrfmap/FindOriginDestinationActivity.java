@@ -13,6 +13,8 @@ import com.app.ariadne.tumrfmap.geojson.GeoJsonMap;
 
 public class FindOriginDestinationActivity extends Activity implements AdapterView.OnItemClickListener{
     String givenDestinationName;
+    private static final String TAG = "SecondActivity";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -47,7 +49,6 @@ public class FindOriginDestinationActivity extends Activity implements AdapterVi
     }
 
     public void onSendUsersName(View view) {
-
         // Get the users name from the EditText
         AutoCompleteTextView destination = findViewById(R.id.destination);
         AutoCompleteTextView source = findViewById(R.id.starting_point);
@@ -74,11 +75,20 @@ public class FindOriginDestinationActivity extends Activity implements AdapterVi
 
         // Close this Activity
         finish();
-
     }
 
     @Override
     public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
         Log.i("SECOND", "View clicked: " + view.getId());
+    }
+
+    @Override
+    public void onBackPressed() {
+        // your code.
+        Log.i(TAG, "Returning to previous activity");
+        Intent goingBack = new Intent();
+        setResult(RESULT_CANCELED, goingBack);
+        // Close this Activity
+        finish();
     }
 }

@@ -9,6 +9,7 @@ import android.graphics.Point;
 import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Handler;
+import android.os.Looper;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
@@ -56,6 +57,7 @@ import com.google.android.gms.maps.model.TileOverlay;
 import com.google.android.gms.maps.model.TileOverlayOptions;
 import com.google.android.gms.maps.model.TileProvider;
 import com.google.android.gms.maps.model.UrlTileProvider;
+import com.google.maps.android.SphericalUtil;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -281,7 +283,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         ImageButton cancelButton = findViewById(R.id.cancel_button);
         cancelButton.setVisibility(Button.INVISIBLE);
         target = null;
-        destinationMarker.remove();
+        if (destinationMarker!= null) {
+            destinationMarker.remove();
+        }
         destinationMarker = null;
         directionsButton.setVisibility(Button.GONE);
         revertButton.setVisibility(ImageButton.GONE);
@@ -388,52 +392,56 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     routePolylineOptionsInLevels = null;
 //                    routePolylineOptionsGray = new PolylineOptions().width(15).color(Color.GRAY).zIndex(Integer.MAX_VALUE - 20);
                     routePolylineOptionsInLevels = dijkstra.getPath(target);
-                    routePolylineOptions = routePolylineOptionsInLevels.get(0);
+                    if (routePolylineOptionsInLevels != null && routePolylineOptionsInLevels.size() > 0) {
+                        routePolylineOptions = routePolylineOptionsInLevels.get(0);
 //                    for (PolylineOptions polylineOptions: routePolylineOptionsInLevels) {
 //                        for (LatLng latLng: polylineOptions.getPoints()) {
 //                            routePolylineOptionsGray.add(latLng);
 //                        }
 //                    }
-                    routeHandler.post(new Runnable() {
-                        public void run() {
-                            ArrayList<ArrayList<LatLng>> route = new ArrayList<>();
-                            if (routePolylineOptions != null && routePolylineOptions.getPoints().size() > 0) {
-                                route.add(ListToArrayList(routePolylineOptions.getPoints()));
+                        routeHandler.post(new Runnable() {
+                            public void run() {
+                                ArrayList<ArrayList<LatLng>> route = new ArrayList<>();
+                                if (routePolylineOptions != null && routePolylineOptions.getPoints().size() > 0) {
+                                    route.add(ListToArrayList(routePolylineOptions.getPoints()));
 //                                currentLevel = Integer.valueOf(dijkstra.level);
-                                moveCameraToStartingPosition();
+                                    moveCameraToStartingPosition();
 //                                if (routeLines != null) {
 //                                    routeLines.remove();
 //                                }
-                                removeRouteLine();
-                                routeLines = new ArrayList<>();
-                                routeLines.add(mMap.addPolyline(routePolylineOptions));
-                            }
+                                    removeRouteLine();
+                                    routeLines = new ArrayList<>();
+                                    routeLines.add(mMap.addPolyline(routePolylineOptions));
+                                }
 //                    System.out.println("Number of points: " + route.get(0).size());
-                            if (destinationMarker != null) {
-                                destinationMarker.remove();
-                                destinationMarker = null;
-                            }
-                            if (sourceMarker != null) {
-                                sourceMarker.remove();
-                                sourceMarker = null;
-                            }
+                                if (destinationMarker != null) {
+                                    destinationMarker.remove();
+                                    destinationMarker = null;
+                                }
+                                if (sourceMarker != null) {
+                                    sourceMarker.remove();
+                                    sourceMarker = null;
+                                }
 //                            sourceMarker = mMap.addMarker(new MarkerOptions()
 //                                    .position(source.getLatlng())
 //                                    .title(source.getId()));
-                            addSourceCircle();
-                            setFloorAsChecked(sourceLevel);
+                                addSourceCircle();
+                                setFloorAsChecked(sourceLevel);
 
-                            ProgressBar progressBar = findViewById(R.id.progressBar2);
-                            progressBar.setVisibility(ProgressBar.GONE);
+                                ProgressBar progressBar = findViewById(R.id.progressBar2);
+                                progressBar.setVisibility(ProgressBar.GONE);
 
-                            //back on UI thread...
-                        }
-                    });
+                                //back on UI thread...
+                            }
+                        });
+                    }
                 } else {
+                    Looper.prepare();
                     Toast.makeText(this, "Destination could not be found", Toast.LENGTH_SHORT).show();
                     cancelTarget(findViewById(R.id.targetDescriptionLayout));
                 }
             } else {
+                Looper.prepare();
                 Toast.makeText(this, "Starting point could not be found", Toast.LENGTH_SHORT).show();
                 cancelTarget(findViewById(R.id.targetDescriptionLayout));
             }
@@ -455,32 +463,35 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        Log.i(TAG, "Return from Activity");
-        // Get the users name from the previous Activity
-        String activityWeReturnedFrom = data.getStringExtra("Activity Name");
-        if (activityWeReturnedFrom.equals("FindDestinationActivity")) {
-            Log.i(TAG, "Returned from Destination activity");
-            String destination = data.getStringExtra("Destination");
-            if (destination != null) {
-                Log.i(TAG, "Destination: " + destination);
-                setDestinationOnMap(destination);
-            }
-        } else {
-            sourceName = data.getStringExtra("Starting point");
-            targetName = data.getStringExtra("Destination");
-            Log.i(TAG, "Source: " + sourceName + ", Destination: " + targetName);
-            directionsButton.setVisibility(Button.GONE);
-            revertButton.setVisibility(ImageButton.VISIBLE);
-            ProgressBar progressBar = findViewById(R.id.progressBar2);
-            progressBar.setVisibility(ProgressBar.VISIBLE);
-            AsyncTask.execute(new Runnable() {
-                @Override
-                public void run() {
-                    handleRouteRequest(sourceName, targetName);
-                    //TODO your background code
-                }
-            });
+        Log.i(TAG, "Return from Activity, resultCode: " + resultCode);
 
+        if (resultCode == RESULT_OK) {
+            // Get the users name from the previous Activity
+            String activityWeReturnedFrom = data.getStringExtra("Activity Name");
+            if (activityWeReturnedFrom.equals("FindDestinationActivity")) {
+                Log.i(TAG, "Returned from Destination activity");
+                String destination = data.getStringExtra("Destination");
+                if (destination != null) {
+                    Log.i(TAG, "Destination: " + destination);
+                    setDestinationOnMap(destination);
+                }
+            } else {
+                sourceName = data.getStringExtra("Starting point");
+                targetName = data.getStringExtra("Destination");
+                Log.i(TAG, "Source: " + sourceName + ", Destination: " + targetName);
+                directionsButton.setVisibility(Button.GONE);
+                revertButton.setVisibility(ImageButton.VISIBLE);
+                ProgressBar progressBar = findViewById(R.id.progressBar2);
+                progressBar.setVisibility(ProgressBar.VISIBLE);
+                AsyncTask.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        handleRouteRequest(sourceName, targetName);
+                        //TODO your background code
+                    }
+                });
+
+            }
         }
     }
 
@@ -600,17 +611,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         removeRouteLine();
         int currentIndex = 0;
         for (PolylineOptions polylineOptions: routePolylineOptionsInLevels) {
-            routePolylineOptionsGray = new PolylineOptions().width(15).color(Color.GRAY).zIndex(Integer.MAX_VALUE - 20);
+            routePolylineOptionsGray = new PolylineOptions().width(20).color(Color.GRAY).zIndex(Integer.MAX_VALUE - 20);
             if (currentIndex != index) {
                 for (LatLng point: polylineOptions.getPoints()) {
                     routePolylineOptionsGray.add(point);
                 }
             }
             addRouteLine(routePolylineOptionsGray);
+            routePolylineOptionsGray.clickable(true);
             currentIndex++;
         }
         if (index != Integer.MIN_VALUE) {
             addRouteLine(routePolylineOptionsInLevels.get(index));
+            routePolylineOptionsGray.clickable(true);
         }
 
         removeSourceCircle();
@@ -766,12 +779,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         revertButton.setVisibility(ImageButton.GONE);
         directionsButton.setVisibility(Button.VISIBLE);
 
-        LinearLayout descriptionLayout = findViewById(R.id.targetDescriptionLayout);
-        descriptionLayout.setVisibility(LinearLayout.VISIBLE);
-        TextView descriptionText = findViewById(R.id.targetDescriptionHeader);
-        descriptionText.setText(String.format("%s, Garching MI Builiding", target.getId()));
-        TextView descriptionTextBody = findViewById(R.id.targetDescriptionBody);
-        descriptionTextBody.setText("Bolzmanstrasse 3");
+        addDestinationDescription();
+//        LinearLayout descriptionLayout = findViewById(R.id.targetDescriptionLayout);
+//        descriptionLayout.setVisibility(LinearLayout.VISIBLE);
+//        TextView descriptionText = findViewById(R.id.targetDescriptionHeader);
+//        descriptionText.setText(String.format("%s, Garching MI Builiding", target.getId()));
+//        TextView descriptionTextBody = findViewById(R.id.targetDescriptionBody);
+//        descriptionTextBody.setText("Bolzmanstrasse 3");
         int level = findLevelFromId(target.getId());
         Log.i(TAG, "Set floor as checked: " + level);
         setFloorAsChecked(level);
@@ -780,6 +794,25 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapClick(LatLng latLng) {
         LinearLayout descriptionLayout = findViewById(R.id.targetDescriptionLayout);
+        double minDistance = 100.0;
+        //TODO: handle negative levels
+        int levelToShow = Integer.valueOf(level);
+        if (routePolylineOptionsInLevels != null) {
+            int currLevel = 0;
+            for (PolylineOptions routeLevel : routePolylineOptionsInLevels) {
+                for (LatLng point : routeLevel.getPoints()) {
+                    double tmpDistance = SphericalUtil.computeDistanceBetween(point, latLng);
+                    if (tmpDistance < minDistance) {
+                        minDistance = tmpDistance;
+                        levelToShow = currLevel;
+                    }
+                }
+                currLevel++;
+            }
+            if (minDistance < 5.0) {
+                setFloorAsChecked(levelToShow);
+            }
+        }
 //        if (descriptionLayout.getVisibility() == LinearLayout.VISIBLE) {
 //            ViewGroup.LayoutParams params = descriptionLayout.getLayoutParams();
 //            params.height = 50;
