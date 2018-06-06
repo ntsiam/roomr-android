@@ -320,32 +320,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     mapUIElementsManager.routePolylineOptionsInLevels = null;
 //                    routePolylineOptionsGray = new PolylineOptions().width(15).color(Color.GRAY).zIndex(Integer.MAX_VALUE - 20);
                     mapUIElementsManager.routePolylineOptionsInLevels = dijkstra.getPath(mapUIElementsManager.target);
-                    if (mapUIElementsManager.routePolylineOptionsInLevels != null && mapUIElementsManager.routePolylineOptionsInLevels.size() > 0) {
-                        mapUIElementsManager.routePolylineOptions = mapUIElementsManager.routePolylineOptionsInLevels.get(0);
-                        routeHandler.post(new Runnable() {
-                            public void run() {
-                                ArrayList<ArrayList<LatLng>> route = new ArrayList<>();
-                                if (mapUIElementsManager.routePolylineOptions != null && mapUIElementsManager.routePolylineOptions.getPoints().size() > 0) {
-                                    route.add(ListToArrayList(mapUIElementsManager.routePolylineOptions.getPoints()));
-//                                currentLevel = Integer.valueOf(dijkstra.level);
-                                    moveCameraToStartingPosition();
-                                    mapUIElementsManager.removeRouteLine();
-                                    mapUIElementsManager.routeLines = new ArrayList<>();
-                                    mapUIElementsManager.routeLines.add(mMap.addPolyline(mapUIElementsManager.routePolylineOptions));
-                                }
-//                    System.out.println("Number of points: " + route.get(0).size());
-                                mapUIElementsManager.removeDestinationMarker();
-                                mapUIElementsManager.removeSourceMarker();
-                                mapUIElementsManager.addSourceCircle();
-                                setFloorAsChecked(mapUIElementsManager.sourceLevel);
-
-                                ProgressBar progressBar = findViewById(R.id.progressBar2);
-                                progressBar.setVisibility(ProgressBar.GONE);
-
-                                //back on UI thread...
-                            }
-                        });
-                    }
+                    mapUIElementsManager.handleRoutePolyline(routeHandler);
                 } else {
                     Looper.prepare();
                     Toast.makeText(this, "Destination could not be found", Toast.LENGTH_SHORT).show();
@@ -358,11 +333,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         }
     }
-
-    public void moveCameraToStartingPosition() {
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(mapUIElementsManager.source.getLatlng(), 18));
-    }
-
 
     public void setFloorAsChecked(int level) {
         int indexOfLevelInButtonList = MAX_FLOOR - level;

@@ -3,16 +3,17 @@ package com.app.ariadne.tumrfmap.map;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
+import android.os.Handler;
 import android.util.Log;
-import android.widget.Button;
-import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.ToggleButton;
 
 import com.app.ariadne.tumrfmap.MapsActivity;
 import com.app.ariadne.tumrfmap.R;
 import com.app.ariadne.tumrfmap.geojson.LatLngWithTags;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.CircleOptions;
@@ -22,6 +23,8 @@ import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.util.ArrayList;
+
+import static com.app.ariadne.tumrfmap.geojson.GeoJsonHelper.ListToArrayList;
 
 public class MapUIElementsManager {
     public ArrayList<PolylineOptions> routePolylineOptionsInLevels;
@@ -80,24 +83,32 @@ public class MapUIElementsManager {
         removeRouteLine();
         int currentIndex = 0;
         for (PolylineOptions polylineOptions: routePolylineOptionsInLevels) {
-            routePolylineOptionsGray = new PolylineOptions().width(20).color(Color.GRAY).zIndex(Integer.MAX_VALUE - 20);
-            if (currentIndex != index) {
-                for (LatLng point: polylineOptions.getPoints()) {
-                    routePolylineOptionsGray.add(point);
-                }
-            }
-            addRouteLine(routePolylineOptionsGray);
-            routePolylineOptionsGray.clickable(true);
+            addPathToPolylineOptionsGray(index, currentIndex, polylineOptions);
             currentIndex++;
         }
         if (index != Integer.MIN_VALUE) {
             addRouteLine(routePolylineOptionsInLevels.get(index));
             routePolylineOptionsGray.clickable(true);
         }
-
         removeSourceCircle();
         addSourceCircle();
     }
+
+    private void addPathToPolylineOptionsGray(int index, int currentIndex, PolylineOptions polylineOptions) {
+        routePolylineOptionsGray = new PolylineOptions().width(20).color(Color.GRAY).zIndex(Integer.MAX_VALUE - 20);
+        if (currentIndex != index) {
+            addPointsToPolyLineOptionsGray(polylineOptions);
+        }
+        addRouteLine(routePolylineOptionsGray);
+        routePolylineOptionsGray.clickable(true);
+    }
+
+    private void addPointsToPolyLineOptionsGray(PolylineOptions polylineOptions) {
+        for (LatLng point: polylineOptions.getPoints()) {
+            routePolylineOptionsGray.add(point);
+        }
+    }
+
 
     public void removeSourceCircle() {
         if (sourceMarker != null) {
@@ -135,13 +146,21 @@ public class MapUIElementsManager {
 
     public void removeRouteLine() {
         if (routeLines != null) {
-            for (int i = 0; i < routeLines.size(); i++) {
-                if (routeLines.get(i) != null) {
-                    routeLines.get(i).remove();
-                }
-            }
+            removeAllRouteLines(routeLines);
         }
         routeLines = null;
+    }
+
+    private void removeAllRouteLines(ArrayList<Polyline> routeLines) {
+        for (int i = 0; i < routeLines.size(); i++) {
+            removeSingleRouteLine(routeLines.get(i));
+        }
+    }
+
+    private void removeSingleRouteLine(Polyline routeLine) {
+        if (routeLine != null) {
+            routeLine.remove();
+        }
     }
 
     public void addRouteLine(PolylineOptions polylineOptions) {
@@ -154,19 +173,12 @@ public class MapUIElementsManager {
 
     public void cancelTarget() {
         target = null;
-        if (destinationMarker!= null) {
-            destinationMarker.remove();
-        }
-        destinationMarker = null;
+        removeDestinationMarker();
         removeDestinationDescription();
-
         removeSourceCircle();
-        if (routeLines != null) {
-            removeRouteLine();
-        }
+        removeRouteLine();
         routePolylineOptionsInLevels = null;
         routePolylineOptions = null;
-
     }
 
     public void removeDestinationMarker() {
@@ -191,6 +203,40 @@ public class MapUIElementsManager {
         descriptionText.setText("");
         TextView descriptionTextBody = activity.findViewById(R.id.targetDescriptionBody);
         descriptionTextBody.setText("");
+    }
+
+    public void handleRoutePolyline(Handler routeHandler) {
+        if (routePolylineOptionsInLevels != null && routePolylineOptionsInLevels.size() > 0) {
+            routePolylineOptions = routePolylineOptionsInLevels.get(0);
+            routeHandler.post(new Runnable() {
+                public void run() {
+                    ArrayList<ArrayList<LatLng>> route = new ArrayList<>();
+                    if (routePolylineOptions != null && routePolylineOptions.getPoints().size() > 0) {
+                        route.add(ListToArrayList(routePolylineOptions.getPoints()));
+//                                currentLevel = Integer.valueOf(dijkstra.level);
+                        moveCameraToStartingPosition();
+                        removeRouteLine();
+                        routeLines = new ArrayList<>();
+                        routeLines.add(mMap.addPolyline(routePolylineOptions));
+                    }
+//                    System.out.println("Number of points: " + route.get(0).size());
+                    removeDestinationMarker();
+                    removeSourceMarker();
+                    addSourceCircle();
+                    ((MapsActivity)(context)).setFloorAsChecked(sourceLevel);
+
+                    ProgressBar progressBar = ((MapsActivity)(context)).findViewById(R.id.progressBar2);
+                    progressBar.setVisibility(ProgressBar.GONE);
+
+                    //back on UI thread...
+                }
+            });
+        }
+
+    }
+
+    public void moveCameraToStartingPosition() {
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(source.getLatlng(), 18));
     }
 
 }
