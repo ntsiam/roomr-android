@@ -36,6 +36,7 @@ import com.app.ariadne.tumrfmap.geojson.GeoJSONDijkstra;
 import com.app.ariadne.tumrfmap.geojson.GeoJsonMap;
 import com.app.ariadne.tumrfmap.geojson.IndoorBuildingBoundsAndFloors;
 import com.app.ariadne.tumrfmap.geojson.LatLngWithTags;
+import com.app.ariadne.tumrfmap.listeners.CircleClickListener;
 import com.app.ariadne.tumrfmap.listeners.LocationButtonClickListener;
 import com.app.ariadne.tumrfmap.listeners.MapLocationListener;
 import com.app.ariadne.tumrfmap.map.MapUIElementsManager;
@@ -71,7 +72,7 @@ import static com.app.ariadne.tumrfmap.geojson.GeoJsonMap.findDestinationFromId;
 import static com.app.ariadne.tumrfmap.geojson.GeoJsonMap.routablePath;
 import static com.app.ariadne.tumrfmap.map.MapUIElementsManager.MAX_FLOOR;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnCameraIdleListener, View.OnClickListener, AdapterView.OnItemClickListener, GoogleMap.OnMapClickListener, GoogleMap.OnCircleClickListener {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnCameraIdleListener, View.OnClickListener, AdapterView.OnItemClickListener, GoogleMap.OnMapClickListener {
 
     private GoogleMap mMap;
     private MultiAutoCompleteTextView roomDestination;
@@ -99,10 +100,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     GeoJsonMap geoJsonMap;
 
     public static final int MY_PERMISSIONS_REQUEST_FINE_LOCATION = 1;
-
-    private static final String[] COUNTRIES = new String[]{
-            "Belgium", "France", "Italy", "Itastria", "Germany", "Spain"
-    };
 
     private static final BoundingBox MUENCHNER_FREIHEIT_BB = new BoundingBox(new LatLng(48.162697, 11.587385), new LatLng(48.160468, 11.584937));
     private static final BoundingBox HAUPTBAHNHOF_BB = new BoundingBox(new LatLng(48.143000, 11.565000), new LatLng(48.137300, 11.554600));
@@ -204,7 +201,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 new LatLng(47.8173, 11.063), new LatLng(48.5361, 12.062));
         mMap.setOnMapClickListener(this);
         mMap.setLatLngBoundsForCameraTarget(MUNICH);
-        mMap.setOnCircleClickListener(this);
+        mMap.setOnCircleClickListener(new CircleClickListener());
 
         // Add a marker in Sydney and move the camera
         LatLng munich = new LatLng(48.137, 11.574);
@@ -584,16 +581,5 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //            descriptionLayout.setOnClickListener(this);
 //            descriptionLayout.setVisibility(LinearLayout.GONE);
 //        }
-    }
-
-    @Override
-    public void onCircleClick(Circle circle) {
-        Log.i(TAG, "Clicked on circle: " + circle.getTag());
-//        Marker source = mMap.addMarker(new MarkerOptions()
-//                .position(circle.getCenter())
-//                .title(circle.getTag().toString()));
-//        source.setVisible(false);
-//        source.showInfoWindow();
-
     }
 }
