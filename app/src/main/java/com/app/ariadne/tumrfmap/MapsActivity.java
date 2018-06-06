@@ -90,8 +90,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     TileOverlay tileOverlay;
     MultiAutoCompleteTextView autoCompleteDestination;
     GeoJSONDijkstra dijkstra;
-    Circle sourceMarker;
-    Marker destinationMarker;
     Handler routeHandler = new Handler();
     ArrayList<ToggleButton> floorButtonList;
     EditText destinationEditText;
@@ -168,11 +166,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (!level.equals("")) {
 //            CustomMapTileProvider customMapTileProvider = new CustomMapTileProvider(getResources().getAssets(), this);
             CustomMapTileProvider customMapTileProvider = new CustomMapTileProvider(this);
-//            String usedLevel = "0";
-//            if (!level.equals("")) {
-              String usedLevel = level;
-//            }
-            customMapTileProvider.setLevel(usedLevel);
+            customMapTileProvider.setLevel(level);
             tileProvider = customMapTileProvider;
             if (tileOverlay != null) {
 //            tileOverlay.clearTileCache();
@@ -250,37 +244,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
-    private void removeDestinationDescription() {
-        LinearLayout descriptionLayout = findViewById(R.id.targetDescriptionLayout);
-        descriptionLayout.setVisibility(LinearLayout.GONE);
-        TextView descriptionText = findViewById(R.id.targetDescriptionHeader);
-        descriptionText.setText("");
-        TextView descriptionTextBody = findViewById(R.id.targetDescriptionBody);
-        descriptionTextBody.setText("");
-    }
-
-
     public void cancelTarget(View view) {
 //        autoCompleteDestination.setText("");
         ImageButton cancelButton = findViewById(R.id.cancel_button);
         cancelButton.setVisibility(Button.INVISIBLE);
-        mapUIElementsManager.target = null;
-        if (destinationMarker!= null) {
-            destinationMarker.remove();
-        }
-        destinationMarker = null;
+        mapUIElementsManager.cancelTarget();
         directionsButton.setVisibility(Button.GONE);
         revertButton.setVisibility(ImageButton.GONE);
         destinationEditText.setText("");
-        removeDestinationDescription();
-
-        mapUIElementsManager.removeSourceCircle();
-        if (mapUIElementsManager.routeLines != null) {
-            mapUIElementsManager.removeRouteLine();
-        }
-        mapUIElementsManager.routePolylineOptionsInLevels = null;
-        mapUIElementsManager.routePolylineOptions = null;
-
+        mapUIElementsManager.removeDestinationDescription();
     }
 
     public void onFindOriginDestinationClick() {
@@ -357,22 +329,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                     route.add(ListToArrayList(mapUIElementsManager.routePolylineOptions.getPoints()));
 //                                currentLevel = Integer.valueOf(dijkstra.level);
                                     moveCameraToStartingPosition();
-//                                if (routeLines != null) {
-//                                    routeLines.remove();
-//                                }
                                     mapUIElementsManager.removeRouteLine();
                                     mapUIElementsManager.routeLines = new ArrayList<>();
                                     mapUIElementsManager.routeLines.add(mMap.addPolyline(mapUIElementsManager.routePolylineOptions));
                                 }
 //                    System.out.println("Number of points: " + route.get(0).size());
-                                if (destinationMarker != null) {
-                                    destinationMarker.remove();
-                                    destinationMarker = null;
-                                }
-                                if (sourceMarker != null) {
-                                    sourceMarker.remove();
-                                    sourceMarker = null;
-                                }
+                                mapUIElementsManager.removeDestinationMarker();
+                                mapUIElementsManager.removeSourceMarker();
                                 mapUIElementsManager.addSourceCircle();
                                 setFloorAsChecked(mapUIElementsManager.sourceLevel);
 
@@ -562,13 +525,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void addMarkerAndZoomCameraOnTarget(LatLngWithTags target) {
-        if (destinationMarker != null) {
-            destinationMarker.remove();
-            destinationMarker = null;
-        }
+        mapUIElementsManager.removeDestinationMarker();
         Projection projection = mMap.getProjection();
         Point mapPoint = projection.toScreenLocation(target.getLatlng());
-        destinationMarker = mMap.addMarker(new MarkerOptions().position(target.getLatlng())
+        mapUIElementsManager.destinationMarker = mMap.addMarker(new MarkerOptions().position(target.getLatlng())
                 .title(target.getId()));
         mMap.animateCamera(CameraUpdateFactory.newCameraPosition(new CameraPosition(target.getLatlng(), 18, mMap.getCameraPosition().tilt, mMap.getCameraPosition().bearing)));
     }

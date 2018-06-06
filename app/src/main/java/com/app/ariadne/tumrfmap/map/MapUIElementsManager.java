@@ -1,10 +1,17 @@
 package com.app.ariadne.tumrfmap.map;
 
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
 import android.util.Log;
+import android.widget.Button;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.ToggleButton;
 
+import com.app.ariadne.tumrfmap.MapsActivity;
+import com.app.ariadne.tumrfmap.R;
 import com.app.ariadne.tumrfmap.geojson.LatLngWithTags;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.Circle;
@@ -36,6 +43,7 @@ public class MapUIElementsManager {
     public int sourceLevel;
     public int destinationLevel;
     public ArrayList<Polyline> routeLines;
+
 
     public MapUIElementsManager(Context context, ArrayList<ToggleButton> floorButtonList, GoogleMap mMap) {
         this.context = context;
@@ -142,6 +150,47 @@ public class MapUIElementsManager {
         }
         routeLines.add(mMap.addPolyline(polylineOptions));
 
+    }
+
+    public void cancelTarget() {
+        target = null;
+        if (destinationMarker!= null) {
+            destinationMarker.remove();
+        }
+        destinationMarker = null;
+        removeDestinationDescription();
+
+        removeSourceCircle();
+        if (routeLines != null) {
+            removeRouteLine();
+        }
+        routePolylineOptionsInLevels = null;
+        routePolylineOptions = null;
+
+    }
+
+    public void removeDestinationMarker() {
+        if (destinationMarker != null) {
+            destinationMarker.remove();
+            destinationMarker = null;
+        }
+    }
+
+    public void removeSourceMarker() {
+        if (sourceMarker != null) {
+            sourceMarker.remove();
+            sourceMarker = null;
+        }
+    }
+
+    public void removeDestinationDescription() {
+        Activity activity = (MapsActivity) context;
+        LinearLayout descriptionLayout = activity.findViewById(R.id.targetDescriptionLayout);
+        descriptionLayout.setVisibility(LinearLayout.GONE);
+        TextView descriptionText = activity.findViewById(R.id.targetDescriptionHeader);
+        descriptionText.setText("");
+        TextView descriptionTextBody = activity.findViewById(R.id.targetDescriptionBody);
+        descriptionTextBody.setText("");
     }
 
 }
