@@ -19,15 +19,22 @@ public class CustomMapTileProvider implements TileProvider {
     private static final int TILE_HEIGHT = 256;
     private static final int BUFFER_SIZE = 16 * 1024;
 
-    private AssetManager mAssets;
+//    private AssetManager mAssets;
     private String level;
     Context context;
     FileDownloader fileDownloader;
     String path;
 
 
-    public CustomMapTileProvider(AssetManager assets, Context context) {
-        mAssets = assets;
+//    public CustomMapTileProvider(AssetManager assets, Context context) {
+//        mAssets = assets;
+//        this.context = context;
+//        this.fileDownloader = new FileDownloader(context);
+//        String packageName = this.context.getPackageName();
+//        path = Environment.getExternalStorageDirectory().getAbsolutePath()+ "/Android/data/" + packageName + "/files/";
+//
+//    }
+    public CustomMapTileProvider(Context context) {
         this.context = context;
         this.fileDownloader = new FileDownloader(context);
         String packageName = this.context.getPackageName();

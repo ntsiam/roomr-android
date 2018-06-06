@@ -36,6 +36,7 @@ import com.app.ariadne.tumrfmap.geojson.GeoJSONDijkstra;
 import com.app.ariadne.tumrfmap.geojson.GeoJsonMap;
 import com.app.ariadne.tumrfmap.geojson.IndoorBuildingBoundsAndFloors;
 import com.app.ariadne.tumrfmap.geojson.LatLngWithTags;
+import com.app.ariadne.tumrfmap.listeners.LocationButtonClickListener;
 import com.app.ariadne.tumrfmap.listeners.MapLocationListener;
 import com.app.ariadne.tumrfmap.tileProvider.CustomMapTileProvider;
 import com.app.ariadne.tumrfmap.util.SpaceTokenizer;
@@ -68,12 +69,10 @@ import static com.app.ariadne.tumrfmap.geojson.GeoJsonHelper.ListToArrayList;
 import static com.app.ariadne.tumrfmap.geojson.GeoJsonMap.findDestinationFromId;
 import static com.app.ariadne.tumrfmap.geojson.GeoJsonMap.routablePath;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnMyLocationButtonClickListener, GoogleMap.OnCameraIdleListener, View.OnClickListener, AdapterView.OnItemClickListener, GoogleMap.OnMapClickListener, GoogleMap.OnCircleClickListener {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnCameraIdleListener, View.OnClickListener, AdapterView.OnItemClickListener, GoogleMap.OnMapClickListener, GoogleMap.OnCircleClickListener {
 
     private GoogleMap mMap;
     private MultiAutoCompleteTextView roomDestination;
-    LocationManager locationManager;
-    MapLocationListener mapLocationListerner;
     private static final String TAG = "MainActivity";
     public static boolean isFirstTime = true;
     ToggleButton level3;
@@ -111,9 +110,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
 
-//    public final String TILESERVER_IP = "131.159.218.107";
     public final String TILESERVER_IP = "ec2-18-191-35-229.us-east-2.compute.amazonaws.com";
-//    public final String TILESERVER_IP = "10.19.1.52";
     GeoJsonMap geoJsonMap;
 //    public final String TILESERVER_IP = "192.168.1.83";
 
@@ -180,12 +177,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     void addTileProvider(final String ipAddress, final String level) {
-//        http://ec2-18-191-35-229.us-east-2.compute.amazonaws.com/hot
-
         TileProvider tileProvider;
         Log.i(TAG, "Add tiles, level: " + level);
         if (!level.equals("")) {
-            CustomMapTileProvider customMapTileProvider = new CustomMapTileProvider(getResources().getAssets(), this);
+//            CustomMapTileProvider customMapTileProvider = new CustomMapTileProvider(getResources().getAssets(), this);
+            CustomMapTileProvider customMapTileProvider = new CustomMapTileProvider(this);
 //            String usedLevel = "0";
 //            if (!level.equals("")) {
               String usedLevel = level;
@@ -260,11 +256,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //        autoCompleteDestination.setOnItemClickListener(this);
 
         mMap.setMyLocationEnabled(true);
-        mMap.setOnMyLocationButtonClickListener(this);
+//        mMap.setOnMyLocationButtonClickListener(this);
         mMap.setPadding(0,150,0,0);
         Toast.makeText(this, "Camera position: " + mMap.getCameraPosition(), Toast.LENGTH_SHORT).show();
 
-//        mMap.setOnMyLocationClickListener(this);
+        mMap.setOnMyLocationButtonClickListener(new LocationButtonClickListener(this, mMap));
 
     }
 
@@ -493,44 +489,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             }
         }
-    }
-
-    void initLocationUpdates() {
-        locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-        requestPermissionToAccessLocation();
-        if (isFirstTime) {
-            setLocationUpdates(locationManager); // Used for the GPS/Network localization
-        }
-    }
-
-    private void setLocationUpdates(LocationManager locationManager) {
-        mapLocationListerner = new MapLocationListener(getApplicationContext(), this);
-        mapLocationListerner.setMap(mMap);
-        String provider;
-        if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-            Log.i(TAG, "Provider: Network Provider");
-            provider = LocationManager.NETWORK_PROVIDER;
-        } else if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            Log.i(TAG, "Provider: GPS Provider");
-            provider = LocationManager.GPS_PROVIDER;
-        } else {
-            provider = LocationManager.PASSIVE_PROVIDER;
-            Log.i(TAG, "Provider: Passive Provider");
-        }
-        Log.i(TAG, "onCreate");
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            return;
-        }
-        locationManager.requestLocationUpdates(provider, 0, 0, mapLocationListerner);
-    }
-
-    @Override
-    public boolean onMyLocationButtonClick() {
-//        Toast.makeText(this, "MyLocation button clicked, location: " + mMap.getMyLocation().toString(), Toast.LENGTH_SHORT).show();
-        // Return false so that we don't consume the event and the default behavior still occurs
-        // (the camera animates to the user's current position).
-        initLocationUpdates();
-        return false;
     }
 
     @Override
