@@ -281,6 +281,20 @@ public class MapUIElementsManager {
 
     }
 
+    public LatLngWithTags getDestination() {
+//        String destinationName = autoCompleteDestination.getText().toString();
+//        destinationName = destinationName.substring(0, destinationName.length() - 1);
+//        Toast.makeText(this, "Destination: " + destinationName, Toast.LENGTH_LONG).show();
+//        target = findDestinationFromId(destinationName);
+        if (target != null) {
+            return target;
+        } else {
+            return null;
+        }
+    }
+
+
+
     public void moveCameraToStartingPosition() {
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(source.getLatlng(), 18));
     }

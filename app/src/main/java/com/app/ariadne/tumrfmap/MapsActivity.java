@@ -320,24 +320,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    private LatLngWithTags getDestination() {
-//        String destinationName = autoCompleteDestination.getText().toString();
-//        destinationName = destinationName.substring(0, destinationName.length() - 1);
-//        Toast.makeText(this, "Destination: " + destinationName, Toast.LENGTH_LONG).show();
-//        target = findDestinationFromId(destinationName);
-        if (mapUIElementsManager.target != null) {
-            return mapUIElementsManager.target;
-        } else {
-            return null;
-        }
-    }
-
     @Override
     public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
 //        Toast.makeText(this, "i = " + i + ", l = " + l + ", view: " + view.toString(), Toast.LENGTH_LONG).show();
         InputMethodManager in = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE); //Hide keyboard
         in.hideSoftInputFromWindow(view.getApplicationWindowToken(), 0);
-        LatLngWithTags destination = getDestination();
+        LatLngWithTags destination = mapUIElementsManager.getDestination();
         mapUIElementsManager.addMarkerAndZoomCameraOnTarget(destination);
         buttonClickListener.showDestinationFoundButtons(destination.getId());
         mapUIElementsManager.addDestinationDescription();
