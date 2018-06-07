@@ -39,6 +39,7 @@ import com.app.ariadne.tumrfmap.geojson.LatLngWithTags;
 import com.app.ariadne.tumrfmap.listeners.ButtonClickListener;
 import com.app.ariadne.tumrfmap.listeners.CircleClickListener;
 import com.app.ariadne.tumrfmap.listeners.LocationButtonClickListener;
+import com.app.ariadne.tumrfmap.listeners.MapClickListener;
 import com.app.ariadne.tumrfmap.listeners.MapLocationListener;
 import com.app.ariadne.tumrfmap.map.MapUIElementsManager;
 import com.app.ariadne.tumrfmap.tileProvider.CustomMapTileProvider;
@@ -73,7 +74,7 @@ import static com.app.ariadne.tumrfmap.geojson.GeoJsonMap.findDestinationFromId;
 import static com.app.ariadne.tumrfmap.geojson.GeoJsonMap.routablePath;
 import static com.app.ariadne.tumrfmap.map.MapUIElementsManager.MAX_FLOOR;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, AdapterView.OnItemClickListener, GoogleMap.OnMapClickListener {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, AdapterView.OnItemClickListener {
 
     private GoogleMap mMap;
     private MultiAutoCompleteTextView roomDestination;
@@ -85,6 +86,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     Handler routeHandler = new Handler();
     MapUIElementsManager mapUIElementsManager;
     ButtonClickListener buttonClickListener;
+    MapClickListener mapClickListener;
 
     public final String TILESERVER_IP = "ec2-18-191-35-229.us-east-2.compute.amazonaws.com";
     GeoJsonMap geoJsonMap;
@@ -143,8 +145,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     void requestPermissionToAccessLocation() {
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            System.out.println("No permission to access location!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this,
+                android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            System.out.println("No permission to access location!");
             ActivityCompat.requestPermissions(this,
                     new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
                     MY_PERMISSIONS_REQUEST_FINE_LOCATION);
@@ -158,19 +162,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.setMinZoomPreference(10.0f);
         LatLngBounds MUNICH = new LatLngBounds(
                 new LatLng(47.8173, 11.063), new LatLng(48.5361, 12.062));
-        mMap.setOnMapClickListener(this);
         mMap.setLatLngBoundsForCameraTarget(MUNICH);
         mMap.setOnCircleClickListener(new CircleClickListener());
 
         // Add a marker in Sydney and move the camera
         LatLng munich = new LatLng(48.137, 11.574);
         //mMap.moveCamera(CameraUpdateFactory.newLatLng(munich));
-        mMap.moveCamera(CameraUpdateFactory.newCameraPosition(new CameraPosition(munich, 14, mMap.getCameraPosition().tilt, mMap.getCameraPosition().bearing)));
+        mMap.moveCamera(CameraUpdateFactory.newCameraPosition(new CameraPosition(munich, 14, mMap.getCameraPosition().tilt,
+                mMap.getCameraPosition().bearing)));
 
         mMap.setOnCameraIdleListener(buttonClickListener);
 //        mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(MUNICH, 0));
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             requestPermissionToAccessLocation();
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
@@ -198,6 +204,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.setOnMyLocationButtonClickListener(new LocationButtonClickListener(this, mMap));
         mapUIElementsManager = new MapUIElementsManager(this, buttonClickListener, mMap);
         buttonClickListener.setMapUIElementsManager(mapUIElementsManager);
+        mapClickListener = new MapClickListener(this, buttonClickListener, mapUIElementsManager);
+        mMap.setOnMapClickListener(mapClickListener);
 
     }
 
@@ -367,35 +375,4 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         buttonClickListener.setFloorAsChecked(level);
     }
 
-    @Override
-    public void onMapClick(LatLng latLng) {
-        LinearLayout descriptionLayout = findViewById(R.id.targetDescriptionLayout);
-        double minDistance = 100.0;
-        //TODO: handle negative levels
-        int levelToShow = Integer.valueOf(mapUIElementsManager.level);
-        if (mapUIElementsManager.routePolylineOptionsInLevels != null) {
-            int currLevel = 0;
-            for (PolylineOptions routeLevel : mapUIElementsManager.routePolylineOptionsInLevels) {
-                for (LatLng point : routeLevel.getPoints()) {
-                    double tmpDistance = SphericalUtil.computeDistanceBetween(point, latLng);
-                    if (tmpDistance < minDistance) {
-                        minDistance = tmpDistance;
-                        levelToShow = currLevel;
-                    }
-                }
-                currLevel++;
-            }
-            if (minDistance < 5.0) {
-                buttonClickListener.setFloorAsChecked(levelToShow);
-            }
-        }
-//        if (descriptionLayout.getVisibility() == LinearLayout.VISIBLE) {
-//            ViewGroup.LayoutParams params = descriptionLayout.getLayoutParams();
-//            params.height = 50;
-//            descriptionLayout.setLayoutParams(params);
-//            Log.i(TAG, "clicked on map: " + latLng.toString());
-//            descriptionLayout.setOnClickListener(this);
-//            descriptionLayout.setVisibility(LinearLayout.GONE);
-//        }
-    }
 }

@@ -24,7 +24,7 @@ public class MapClickListener implements GoogleMap.OnMapClickListener {
 
     @Override
     public void onMapClick(LatLng latLng) {
-        LinearLayout descriptionLayout = ((MapsActivity) context).findViewById(R.id.targetDescriptionLayout);
+//        LinearLayout descriptionLayout = ((MapsActivity) context).findViewById(R.id.targetDescriptionLayout);
         double minDistance = 100.0;
         //TODO: handle negative levels
         int levelToShow = Integer.valueOf(mapUIElementsManager.level);
