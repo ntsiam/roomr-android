@@ -38,6 +38,7 @@ import com.app.ariadne.tumrfmap.geojson.IndoorBuildingBoundsAndFloors;
 import com.app.ariadne.tumrfmap.geojson.LatLngWithTags;
 import com.app.ariadne.tumrfmap.listeners.ButtonClickListener;
 import com.app.ariadne.tumrfmap.listeners.CircleClickListener;
+import com.app.ariadne.tumrfmap.listeners.ItemClickListener;
 import com.app.ariadne.tumrfmap.listeners.LocationButtonClickListener;
 import com.app.ariadne.tumrfmap.listeners.MapClickListener;
 import com.app.ariadne.tumrfmap.listeners.MapLocationListener;
@@ -74,7 +75,7 @@ import static com.app.ariadne.tumrfmap.geojson.GeoJsonMap.findDestinationFromId;
 import static com.app.ariadne.tumrfmap.geojson.GeoJsonMap.routablePath;
 import static com.app.ariadne.tumrfmap.map.MapUIElementsManager.MAX_FLOOR;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, AdapterView.OnItemClickListener {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
     private MultiAutoCompleteTextView roomDestination;
@@ -87,6 +88,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     MapUIElementsManager mapUIElementsManager;
     ButtonClickListener buttonClickListener;
     MapClickListener mapClickListener;
+    ItemClickListener itemClickListener;
 
     public final String TILESERVER_IP = "ec2-18-191-35-229.us-east-2.compute.amazonaws.com";
     GeoJsonMap geoJsonMap;
@@ -197,7 +199,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         buttonClickListener.setMapUIElementsManager(mapUIElementsManager);
         mapClickListener = new MapClickListener(this, buttonClickListener, mapUIElementsManager);
         mMap.setOnMapClickListener(mapClickListener);
-
+        itemClickListener = new ItemClickListener(this, mapUIElementsManager, buttonClickListener);
     }
 
     public void cancelTarget(View view) {
@@ -319,19 +321,4 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         }
     }
-
-    @Override
-    public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-//        Toast.makeText(this, "i = " + i + ", l = " + l + ", view: " + view.toString(), Toast.LENGTH_LONG).show();
-        InputMethodManager in = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE); //Hide keyboard
-        in.hideSoftInputFromWindow(view.getApplicationWindowToken(), 0);
-        LatLngWithTags destination = mapUIElementsManager.getDestination();
-        mapUIElementsManager.addMarkerAndZoomCameraOnTarget(destination);
-        buttonClickListener.showDestinationFoundButtons(destination.getId());
-        mapUIElementsManager.addDestinationDescription();
-        int level = findLevelFromId(mapUIElementsManager.target.getId());
-        Log.i(TAG, "Set floor as checked: " + level);
-        buttonClickListener.setFloorAsChecked(level);
-    }
-
 }
