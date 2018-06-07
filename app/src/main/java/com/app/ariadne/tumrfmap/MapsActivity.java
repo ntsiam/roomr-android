@@ -36,6 +36,7 @@ import com.app.ariadne.tumrfmap.geojson.GeoJSONDijkstra;
 import com.app.ariadne.tumrfmap.geojson.GeoJsonMap;
 import com.app.ariadne.tumrfmap.geojson.IndoorBuildingBoundsAndFloors;
 import com.app.ariadne.tumrfmap.geojson.LatLngWithTags;
+import com.app.ariadne.tumrfmap.listeners.ButtonClickListener;
 import com.app.ariadne.tumrfmap.listeners.CircleClickListener;
 import com.app.ariadne.tumrfmap.listeners.LocationButtonClickListener;
 import com.app.ariadne.tumrfmap.listeners.MapLocationListener;
@@ -72,44 +73,23 @@ import static com.app.ariadne.tumrfmap.geojson.GeoJsonMap.findDestinationFromId;
 import static com.app.ariadne.tumrfmap.geojson.GeoJsonMap.routablePath;
 import static com.app.ariadne.tumrfmap.map.MapUIElementsManager.MAX_FLOOR;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnCameraIdleListener, View.OnClickListener, AdapterView.OnItemClickListener, GoogleMap.OnMapClickListener {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, AdapterView.OnItemClickListener, GoogleMap.OnMapClickListener {
 
     private GoogleMap mMap;
     private MultiAutoCompleteTextView roomDestination;
     private static final String TAG = "MainActivity";
     public static boolean isFirstTime = true;
-    ToggleButton level3;
-    ToggleButton level2;
-    ToggleButton level1;
-    ToggleButton level0;
-    ToggleButton leveln1;
-    ToggleButton leveln2;
-    ToggleButton leveln3;
-    ToggleButton leveln4;
-    Button directionsButton;
-    ImageButton revertButton;
     TileOverlay tileOverlay;
     MultiAutoCompleteTextView autoCompleteDestination;
     GeoJSONDijkstra dijkstra;
     Handler routeHandler = new Handler();
-    ArrayList<ToggleButton> floorButtonList;
-    EditText destinationEditText;
     MapUIElementsManager mapUIElementsManager;
+    ButtonClickListener buttonClickListener;
 
     public final String TILESERVER_IP = "ec2-18-191-35-229.us-east-2.compute.amazonaws.com";
     GeoJsonMap geoJsonMap;
 
     public static final int MY_PERMISSIONS_REQUEST_FINE_LOCATION = 1;
-
-    private static final BoundingBox MUENCHNER_FREIHEIT_BB = new BoundingBox(new LatLng(48.162697, 11.587385), new LatLng(48.160468, 11.584937));
-    private static final BoundingBox HAUPTBAHNHOF_BB = new BoundingBox(new LatLng(48.143000, 11.565000), new LatLng(48.137300, 11.554600));
-    private static final BoundingBox GARCHING_MI_BB = new BoundingBox(new LatLng(48.2636, 11.6705), new LatLng(48.2613, 11.6653));
-    private static final IndoorBuildingBoundsAndFloors MUENCHNER_FREIHEIT = new IndoorBuildingBoundsAndFloors(MUENCHNER_FREIHEIT_BB, -2, 0);
-    private static final IndoorBuildingBoundsAndFloors HAUPTBAHNHOF = new IndoorBuildingBoundsAndFloors(HAUPTBAHNHOF_BB, -4, 0);
-    private static final IndoorBuildingBoundsAndFloors GARCHING_MI = new IndoorBuildingBoundsAndFloors(GARCHING_MI_BB, 0, 3);
-    private static final IndoorBuildingBoundsAndFloors[] BOUNDS_FOR_INDOOR_BUTTONS = new IndoorBuildingBoundsAndFloors[] {
-            MUENCHNER_FREIHEIT, HAUPTBAHNHOF, GARCHING_MI
-    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -125,39 +105,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //        autoCompleteDestination.setTokenizer(new SpaceTokenizer());
 //        editText = findViewById(R.id.editText);
 //        editText.setOnClickListener(this);
-        initFloorButtonList();
-        directionsButton = findViewById(R.id.directions);
-        revertButton = findViewById(R.id.revert);
-        directionsButton.setOnClickListener(this);
-        revertButton.setOnClickListener(this);
-        destinationEditText = findViewById(R.id.findDestination);
+//        initFloorButtonList();
+
+        buttonClickListener = new ButtonClickListener(this);
+//        directionsButton = findViewById(R.id.directions);
+//        revertButton = findViewById(R.id.revert);
+//        directionsButton.setOnClickListener(this);
+//        revertButton.setOnClickListener(this);
+//        destinationEditText = findViewById(R.id.findDestination);
 
     }
 
-    private void initFloorButtonList() {
-        level3 = findViewById(R.id.button3);
-        level2 = findViewById(R.id.button2);
-        level1 = findViewById(R.id.button1);
-        level0 = findViewById(R.id.button0);
-        leveln1 = findViewById(R.id.buttonn1);
-        leveln2 = findViewById(R.id.buttonn2);
-        leveln3 = findViewById(R.id.buttonn3);
-        leveln4 = findViewById(R.id.buttonn4);
-        floorButtonList = new ArrayList<>();
-        floorButtonList.add(level3);
-        floorButtonList.add(level2);
-        floorButtonList.add(level1);
-        floorButtonList.add(level0);
-        floorButtonList.add(leveln1);
-        floorButtonList.add(leveln2);
-        floorButtonList.add(leveln3);
-        floorButtonList.add(leveln4);
-        for (ToggleButton button: floorButtonList) {
-            button.setOnClickListener(this);
-        }
-    }
-
-    void addTileProvider(final String level) {
+    public void addTileProvider(final String level) {
         TileProvider tileProvider;
         Log.i(TAG, "Add tiles, level: " + level);
         if (!level.equals("")) {
@@ -208,7 +167,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         //mMap.moveCamera(CameraUpdateFactory.newLatLng(munich));
         mMap.moveCamera(CameraUpdateFactory.newCameraPosition(new CameraPosition(munich, 14, mMap.getCameraPosition().tilt, mMap.getCameraPosition().bearing)));
 
-        mMap.setOnCameraIdleListener(this);
+        mMap.setOnCameraIdleListener(buttonClickListener);
 //        mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(MUNICH, 0));
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -237,18 +196,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Toast.makeText(this, "Camera position: " + mMap.getCameraPosition(), Toast.LENGTH_SHORT).show();
 
         mMap.setOnMyLocationButtonClickListener(new LocationButtonClickListener(this, mMap));
-        mapUIElementsManager = new MapUIElementsManager(this, floorButtonList, mMap);
+        mapUIElementsManager = new MapUIElementsManager(this, buttonClickListener, mMap);
+        buttonClickListener.setMapUIElementsManager(mapUIElementsManager);
 
     }
 
     public void cancelTarget(View view) {
 //        autoCompleteDestination.setText("");
-        ImageButton cancelButton = findViewById(R.id.cancel_button);
-        cancelButton.setVisibility(Button.INVISIBLE);
         mapUIElementsManager.cancelTarget();
-        directionsButton.setVisibility(Button.GONE);
-        revertButton.setVisibility(ImageButton.GONE);
-        destinationEditText.setText("");
+        buttonClickListener.removeButtons();
         mapUIElementsManager.removeDestinationDescription();
     }
 
@@ -278,7 +234,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
 
-    private boolean isGarchingMIId(String id) {
+    private static boolean isGarchingMIId(String id) {
         StringTokenizer multiTokenizer = new StringTokenizer(id, ".");
         int index = 0;
         while (multiTokenizer.hasMoreTokens()) {
@@ -290,7 +246,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         return index == 3;
     }
 
-    private int findLevelFromId(String id) {
+    public static int findLevelFromId(String id) {
         int level = 0;
         if (isGarchingMIId(id)) {
             level = Integer.valueOf(id.substring(1,2));
@@ -331,13 +287,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    public void setFloorAsChecked(int level) {
-        int indexOfLevelInButtonList = MAX_FLOOR - level;
-        floorButtonList.get(indexOfLevelInButtonList).setChecked(true);
-        addTileProvider(String.valueOf(level));
-        clickFloor(level);
-    }
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -351,14 +300,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 String destination = data.getStringExtra("Destination");
                 if (destination != null) {
                     Log.i(TAG, "Destination: " + destination);
-                    setDestinationOnMap(destination);
+                    mapUIElementsManager.setDestinationOnMap(destination);
                 }
             } else {
                 mapUIElementsManager.sourceName = data.getStringExtra("Starting point");
                 mapUIElementsManager.targetName = data.getStringExtra("Destination");
                 Log.i(TAG, "Source: " + mapUIElementsManager.sourceName + ", Destination: " + mapUIElementsManager.targetName);
-                directionsButton.setVisibility(Button.GONE);
-                revertButton.setVisibility(ImageButton.VISIBLE);
+                buttonClickListener.showDirectionsButtons();
                 ProgressBar progressBar = findViewById(R.id.progressBar2);
                 progressBar.setVisibility(ProgressBar.VISIBLE);
                 AsyncTask.execute(new Runnable() {
@@ -373,112 +321,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    @Override
-    public void onCameraIdle() {
-        setButtonVisibilityBasedOnCameraPosition();
-    }
-
-    private void setButtonVisibilityBasedOnCameraPosition() {
-        level3.setVisibility(Button.GONE);
-        level2.setVisibility(Button.GONE);
-        level1.setVisibility(Button.GONE);
-        level0.setVisibility(Button.GONE);
-        leveln1.setVisibility(Button.GONE);
-        leveln2.setVisibility(Button.GONE);
-        leveln3.setVisibility(Button.GONE);
-        leveln4.setVisibility(Button.GONE);
-        for (IndoorBuildingBoundsAndFloors indoorBuildingBoundsAndFloors: BOUNDS_FOR_INDOOR_BUTTONS) {
-            setButtonVisibilityForSingleLocation(indoorBuildingBoundsAndFloors);
-        }
-    }
-
-    private void setButtonVisibilityForSingleLocation(IndoorBuildingBoundsAndFloors indoorBuildingBoundsAndFloors) {
-        int minZoom = 15;
-        LatLng cameraPosition = mMap.getCameraPosition().target;
-        BoundingBox boundingBox = indoorBuildingBoundsAndFloors.getBoundingBox();
-        double maxLat = boundingBox.getMaxLat();
-        double maxLng = boundingBox.getMaxLng();
-        double minLat = boundingBox.getMinLat();
-        double minLng = boundingBox.getMinLng();
-        ScrollView sv = (ScrollView)findViewById(R.id.scrollViewButtons);
-        if (cameraPosition.latitude < maxLat && cameraPosition.latitude > minLat && cameraPosition.longitude < maxLng &&
-                cameraPosition.longitude > minLng && mMap.getCameraPosition().zoom > minZoom) {
-            int floor = MAX_FLOOR;
-            for (ToggleButton button: floorButtonList) {
-                // Here set the corresponding floor button to visible, if the current map includes a layer for the button's floor
-                // The first item in the button list refers to the minimum floor
-                if (indoorBuildingBoundsAndFloors.getMinFloor() <= floor && indoorBuildingBoundsAndFloors.getMaxFloor() >= floor) {
-                    button.setVisibility(ToggleButton.VISIBLE);
-                }
-                floor--;
-            }
-        }
-    }
-
-    public void clickFloor(int requestedLevel) {
-        String level;
-        level = String.valueOf(requestedLevel);
-        Log.i(TAG, "Requested level: " + level);
-        level = level.replace("-", "n");
-        Log.i(TAG, "Requested level after replace: " + level);
-        int indexOfLevelInButtonList = MAX_FLOOR - requestedLevel;
-        int currentIndexInButtonList = 0;
-        for (ToggleButton levelButton: floorButtonList) {
-            if (currentIndexInButtonList != indexOfLevelInButtonList) {
-                levelButton.setChecked(false);
-            } else {
-                if (!levelButton.isChecked()) {
-                    Log.i(TAG, "Entered here");
-                    level = ""; //no tiles for ""
-                    if (mapUIElementsManager.routePolylineOptionsInLevels != null) {
-                        mapUIElementsManager.addRouteLineFromPolyLineOptions(Integer.MIN_VALUE);
-                    }
-                } else {
-                    if (mapUIElementsManager.routePolylineOptionsInLevels != null) {
-                        int polyLineIndex = mapUIElementsManager.findPolyLineIndex(requestedLevel);
-                        mapUIElementsManager.addRouteLineFromPolyLineOptions(polyLineIndex);
-                    }
-                }
-            }
-            currentIndexInButtonList++;
-        }
-        mapUIElementsManager.level = level;
-    }
-
-    @Override
-    public void onClick(View view) {
-        Log.i(TAG, "onClick");
-        if (view.getId() == R.id.button3) {
-            clickFloor(3);
-        } else if (view.getId() == R.id.button2) {
-            clickFloor(2);
-        } else if (view.getId() == R.id.button1) {
-            clickFloor(1);
-        } else if (view.getId() == R.id.button0) {
-            clickFloor(0);
-        } else if (view.getId() == R.id.buttonn1) {
-            clickFloor(-1);
-        } else if (view.getId() == R.id.buttonn2) {
-            clickFloor(-2);
-        } else if (view.getId() == R.id.buttonn3) {
-            clickFloor(-3);
-        } else if (view.getId() == R.id.buttonn4) {
-            clickFloor(-4);
-        } else if (view.getId() == R.id.directions) {
-            onFindOriginDestinationClick();
-        } else if (view.getId() == R.id.revert) {
-            onFindOriginDestinationClick();
-        } else if (view.getId() == R.id.targetDescriptionLayout) {
-//            LinearLayout descriptionLayout = findViewById(R.id.targetDescriptionLayout);
-//            descriptionLayout.setOnClickListener(null);
-//            ViewGroup.LayoutParams params = descriptionLayout.getLayoutParams();
-//            params.height = 200;
-//            descriptionLayout.setLayoutParams(params);
-
-        }
-        addTileProvider(mapUIElementsManager.level);
-    }
-
     private LatLngWithTags getDestination() {
 //        String destinationName = autoCompleteDestination.getText().toString();
 //        destinationName = destinationName.substring(0, destinationName.length() - 1);
@@ -491,34 +333,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    private void addMarkerAndZoomCameraOnTarget(LatLngWithTags target) {
-        mapUIElementsManager.removeDestinationMarker();
-        Projection projection = mMap.getProjection();
-        Point mapPoint = projection.toScreenLocation(target.getLatlng());
-        mapUIElementsManager.destinationMarker = mMap.addMarker(new MarkerOptions().position(target.getLatlng())
-                .title(target.getId()));
-        mMap.animateCamera(CameraUpdateFactory.newCameraPosition(new CameraPosition(target.getLatlng(), 18, mMap.getCameraPosition().tilt, mMap.getCameraPosition().bearing)));
-    }
-
-    private void setDestinationOnMap(String destinationId) {
-        mapUIElementsManager.target = findDestinationFromId(destinationId);
-        if (mapUIElementsManager.target != null) {
-//            destinationEditText = findViewById(R.id.findDestination);
-            destinationEditText.setText(destinationId);
-            addMarkerAndZoomCameraOnTarget(mapUIElementsManager.target);
-            ImageButton cancelButton = findViewById(R.id.cancel_button);
-            cancelButton.setVisibility(Button.VISIBLE);
-            revertButton.setVisibility(ImageButton.GONE);
-            directionsButton.setVisibility(Button.VISIBLE);
-            addDestinationDescription();
-
-            int level = findLevelFromId(mapUIElementsManager.target.getId());
-            Log.i(TAG, "Set floor as checked: " + level);
-            setFloorAsChecked(level);
-        }
-    }
-
-    private void addDestinationDescription() {
+    public void addDestinationDescription() {
         LinearLayout descriptionLayout = findViewById(R.id.targetDescriptionLayout);
         descriptionLayout.setVisibility(LinearLayout.VISIBLE);
         TextView descriptionText = findViewById(R.id.targetDescriptionHeader);
@@ -533,11 +348,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         InputMethodManager in = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE); //Hide keyboard
         in.hideSoftInputFromWindow(view.getApplicationWindowToken(), 0);
         LatLngWithTags destination = getDestination();
-        addMarkerAndZoomCameraOnTarget(destination);
-        ImageButton cancelButton = findViewById(R.id.cancel_button);
-        cancelButton.setVisibility(Button.VISIBLE);
-        revertButton.setVisibility(ImageButton.GONE);
-        directionsButton.setVisibility(Button.VISIBLE);
+        mapUIElementsManager.addMarkerAndZoomCameraOnTarget(destination);
+        buttonClickListener.showDestinationFoundButtons(destination.getId());
+//        ImageButton cancelButton = findViewById(R.id.cancel_button);
+//        cancelButton.setVisibility(Button.VISIBLE);
+//        revertButton.setVisibility(ImageButton.GONE);
+//        directionsButton.setVisibility(Button.VISIBLE);
 
         addDestinationDescription();
 //        LinearLayout descriptionLayout = findViewById(R.id.targetDescriptionLayout);
@@ -548,7 +364,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //        descriptionTextBody.setText("Bolzmanstrasse 3");
         int level = findLevelFromId(mapUIElementsManager.target.getId());
         Log.i(TAG, "Set floor as checked: " + level);
-        setFloorAsChecked(level);
+        buttonClickListener.setFloorAsChecked(level);
     }
 
     @Override
@@ -570,7 +386,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 currLevel++;
             }
             if (minDistance < 5.0) {
-                setFloorAsChecked(levelToShow);
+                buttonClickListener.setFloorAsChecked(levelToShow);
             }
         }
 //        if (descriptionLayout.getVisibility() == LinearLayout.VISIBLE) {

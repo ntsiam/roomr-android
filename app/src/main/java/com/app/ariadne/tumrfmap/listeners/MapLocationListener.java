@@ -15,11 +15,6 @@ import com.google.android.gms.maps.model.Marker;
 
 import static com.app.ariadne.tumrfmap.MapsActivity.isFirstTime;
 
-//import static com.roomr.ariadne.tumnavigator.GeoJsonMap.startingPoint;
-//import static com.roomr.ariadne.tumnavigator.MapsActivity.IS_INITIAL_POSITION_DEFINED;
-//import static com.roomr.ariadne.tumnavigator.MapsActivity.initialUncertaintyRadius;
-//import static com.roomr.ariadne.tumnavigator.MapsActivity.isLocalizationActivated;
-
 public class MapLocationListener implements LocationListener {
     private GoogleMap mMap;
     private Context applicationContext;

@@ -3,8 +3,11 @@ package com.app.ariadne.tumrfmap.map;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
+import android.graphics.Point;
 import android.os.Handler;
 import android.util.Log;
+import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -13,18 +16,24 @@ import android.widget.ToggleButton;
 import com.app.ariadne.tumrfmap.MapsActivity;
 import com.app.ariadne.tumrfmap.R;
 import com.app.ariadne.tumrfmap.geojson.LatLngWithTags;
+import com.app.ariadne.tumrfmap.listeners.ButtonClickListener;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.Projection;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.util.ArrayList;
 
+import static com.app.ariadne.tumrfmap.MapsActivity.findLevelFromId;
 import static com.app.ariadne.tumrfmap.geojson.GeoJsonHelper.ListToArrayList;
+import static com.app.ariadne.tumrfmap.geojson.GeoJsonMap.findDestinationFromId;
 
 public class MapUIElementsManager {
     public ArrayList<PolylineOptions> routePolylineOptionsInLevels;
@@ -35,7 +44,6 @@ public class MapUIElementsManager {
     public String level;
     private final int MIN_FLOOR = -4;
     public static final int MAX_FLOOR = 3;
-    public ArrayList<ToggleButton> floorButtonList;
     public String sourceName;
     public String targetName;
     public Circle sourceMarker;
@@ -46,18 +54,19 @@ public class MapUIElementsManager {
     public int sourceLevel;
     public int destinationLevel;
     public ArrayList<Polyline> routeLines;
+    ButtonClickListener buttonClickListener;
 
 
-    public MapUIElementsManager(Context context, ArrayList<ToggleButton> floorButtonList, GoogleMap mMap) {
+    public MapUIElementsManager(Context context, ButtonClickListener buttonClickListener, GoogleMap mMap) {
         this.context = context;
-        this.floorButtonList = floorButtonList;
+        this.buttonClickListener = buttonClickListener;
         this.mMap = mMap;
     }
 
     public void managePolylineOptions(int requestedLevel) {
         int indexOfLevelInButtonList = MAX_FLOOR - requestedLevel;
         int currentIndexInButtonList = 0;
-        for (ToggleButton levelButton: floorButtonList) {
+        for (ToggleButton levelButton: buttonClickListener.floorButtonList) {
             if (currentIndexInButtonList != indexOfLevelInButtonList) {
                 levelButton.setChecked(false);
             } else {
@@ -78,6 +87,32 @@ public class MapUIElementsManager {
         }
 
     }
+
+    public void setDestinationOnMap(String destinationId) {
+        target = findDestinationFromId(destinationId);
+        if (target != null) {
+//            destinationEditText = findViewById(R.id.findDestination);
+            addMarkerAndZoomCameraOnTarget(target);
+            ((MapsActivity)(context)).addDestinationDescription();
+            buttonClickListener.showDestinationFoundButtons(destinationId);
+
+            int level = findLevelFromId(target.getId());
+            Log.i(TAG, "Set floor as checked: " + level);
+            buttonClickListener.setFloorAsChecked(level);
+        }
+    }
+
+    public void addMarkerAndZoomCameraOnTarget(LatLngWithTags target) {
+        removeDestinationMarker();
+        Projection projection = mMap.getProjection();
+        Point mapPoint = projection.toScreenLocation(target.getLatlng());
+        destinationMarker = mMap.addMarker(new MarkerOptions().position(target.getLatlng())
+                .title(target.getId()));
+        mMap.animateCamera(CameraUpdateFactory.newCameraPosition(new CameraPosition(target.getLatlng(),
+                18, mMap.getCameraPosition().tilt, mMap.getCameraPosition().bearing)));
+    }
+
+
 
     public void addRouteLineFromPolyLineOptions(int index) {
         removeRouteLine();
@@ -223,7 +258,7 @@ public class MapUIElementsManager {
                     removeDestinationMarker();
                     removeSourceMarker();
                     addSourceCircle();
-                    ((MapsActivity)(context)).setFloorAsChecked(sourceLevel);
+                    buttonClickListener.setFloorAsChecked(sourceLevel);
 
                     ProgressBar progressBar = ((MapsActivity)(context)).findViewById(R.id.progressBar2);
                     progressBar.setVisibility(ProgressBar.GONE);

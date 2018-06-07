@@ -40,10 +40,14 @@ public class Vertex {
             return false;
         Vertex other = (Vertex) obj;
         if (id == null) {
-            if (other.id != null)
+            if (other.id != null) {
                 return false;
-        } else if (!id.equals(other.id))
+            }
+        } else if (!id.equals(other.id)) {
             return false;
+//        } else if (id.equals(other.id) && level != null && other.level != null && !level.equals(other.level)) {
+//            return false;
+        }
         return true;
     }
 
