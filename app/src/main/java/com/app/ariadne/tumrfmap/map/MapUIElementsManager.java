@@ -93,7 +93,7 @@ public class MapUIElementsManager {
         if (target != null) {
 //            destinationEditText = findViewById(R.id.findDestination);
             addMarkerAndZoomCameraOnTarget(target);
-            ((MapsActivity)(context)).addDestinationDescription();
+            addDestinationDescription();
             buttonClickListener.showDestinationFoundButtons(destinationId);
 
             int level = findLevelFromId(target.getId());
@@ -239,6 +239,17 @@ public class MapUIElementsManager {
         TextView descriptionTextBody = activity.findViewById(R.id.targetDescriptionBody);
         descriptionTextBody.setText("");
     }
+
+    public void addDestinationDescription() {
+        Activity activity = (MapsActivity) context;
+        LinearLayout descriptionLayout = activity.findViewById(R.id.targetDescriptionLayout);
+        descriptionLayout.setVisibility(LinearLayout.VISIBLE);
+        TextView descriptionText = activity.findViewById(R.id.targetDescriptionHeader);
+        descriptionText.setText(String.format("%s, Garching MI Builiding", target.getId()));
+        TextView descriptionTextBody = activity.findViewById(R.id.targetDescriptionBody);
+        descriptionTextBody.setText("Bolzmanstrasse 3");
+    }
+
 
     public void handleRoutePolyline(Handler routeHandler) {
         if (routePolylineOptionsInLevels != null && routePolylineOptionsInLevels.size() > 0) {

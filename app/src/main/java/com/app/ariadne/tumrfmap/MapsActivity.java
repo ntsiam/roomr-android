@@ -105,16 +105,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mapFragment.getMapAsync(this);
 //        autoCompleteDestination = findViewById(R.id.multiAutoCompleteTextView);
 //        autoCompleteDestination.setTokenizer(new SpaceTokenizer());
-//        editText = findViewById(R.id.editText);
-//        editText.setOnClickListener(this);
-//        initFloorButtonList();
-
         buttonClickListener = new ButtonClickListener(this);
-//        directionsButton = findViewById(R.id.directions);
-//        revertButton = findViewById(R.id.revert);
-//        directionsButton.setOnClickListener(this);
-//        revertButton.setOnClickListener(this);
-//        destinationEditText = findViewById(R.id.findDestination);
 
     }
 
@@ -341,15 +332,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    public void addDestinationDescription() {
-        LinearLayout descriptionLayout = findViewById(R.id.targetDescriptionLayout);
-        descriptionLayout.setVisibility(LinearLayout.VISIBLE);
-        TextView descriptionText = findViewById(R.id.targetDescriptionHeader);
-        descriptionText.setText(String.format("%s, Garching MI Builiding", mapUIElementsManager.target.getId()));
-        TextView descriptionTextBody = findViewById(R.id.targetDescriptionBody);
-        descriptionTextBody.setText("Bolzmanstrasse 3");
-    }
-
     @Override
     public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
 //        Toast.makeText(this, "i = " + i + ", l = " + l + ", view: " + view.toString(), Toast.LENGTH_LONG).show();
@@ -358,18 +340,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         LatLngWithTags destination = getDestination();
         mapUIElementsManager.addMarkerAndZoomCameraOnTarget(destination);
         buttonClickListener.showDestinationFoundButtons(destination.getId());
-//        ImageButton cancelButton = findViewById(R.id.cancel_button);
-//        cancelButton.setVisibility(Button.VISIBLE);
-//        revertButton.setVisibility(ImageButton.GONE);
-//        directionsButton.setVisibility(Button.VISIBLE);
-
-        addDestinationDescription();
-//        LinearLayout descriptionLayout = findViewById(R.id.targetDescriptionLayout);
-//        descriptionLayout.setVisibility(LinearLayout.VISIBLE);
-//        TextView descriptionText = findViewById(R.id.targetDescriptionHeader);
-//        descriptionText.setText(String.format("%s, Garching MI Builiding", target.getId()));
-//        TextView descriptionTextBody = findViewById(R.id.targetDescriptionBody);
-//        descriptionTextBody.setText("Bolzmanstrasse 3");
+        mapUIElementsManager.addDestinationDescription();
         int level = findLevelFromId(mapUIElementsManager.target.getId());
         Log.i(TAG, "Set floor as checked: " + level);
         buttonClickListener.setFloorAsChecked(level);
