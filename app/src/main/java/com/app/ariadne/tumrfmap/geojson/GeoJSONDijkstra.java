@@ -13,6 +13,7 @@ import com.app.ariadne.tumrfmap.dijkstra.model.Graph;
 import com.app.ariadne.tumrfmap.dijkstra.model.Vertex;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
@@ -23,6 +24,10 @@ public class GeoJSONDijkstra {
     private ArrayList<Vertex> vertices;
     private ArrayList<Edge> edges;
     public String level;
+    public double maxRouteLat;
+    public double maxRouteLng;
+    public double minRouteLat;
+    public double minRouteLng;
 
 
     public GeoJSONDijkstra(ArrayList<ArrayList<LatLngWithTags>> paths) {
@@ -136,6 +141,7 @@ public class GeoJSONDijkstra {
     }
 
     public ArrayList<PolylineOptions> getPath(LatLngWithTags destination) {
+        initRouteMinMax();
         LinkedList<Vertex> path;
         LineString pathLineString;
         ArrayList<PolylineOptions> polylineOptionsInLevels = new ArrayList<>();
@@ -143,14 +149,28 @@ public class GeoJSONDijkstra {
         ArrayList<LatLng> pathArrayList = new ArrayList<>();
 //        System.out.println("Target: " + vertices.get(index).toString());
             path = getGraphPath(destination);
+            path = removePathDuplicates(path);
             Log.i("GEOJSONDIJKSTRA", "Path found");
             if (path != null) {
                 int prevLevel = Integer.MIN_VALUE;
+                LatLng prevPoint = null;
                 for (Vertex point : path) {
                     int level = Integer.valueOf(point.getLevel());
                     LatLng nextPoint;
 //                System.out.println("Point: " + point.getId());
                     nextPoint = stringToLatLng(point.getId());
+                    if (nextPoint.latitude > maxRouteLat) {
+                        maxRouteLat = nextPoint.latitude;
+                    }
+                    if (nextPoint.longitude > maxRouteLng) {
+                        maxRouteLng = nextPoint.longitude;
+                    }
+                    if (nextPoint.latitude < minRouteLat) {
+                        minRouteLat = nextPoint.latitude;
+                    }
+                    if (nextPoint.longitude < minRouteLng) {
+                        minRouteLng = nextPoint.longitude;
+                    }
                     if (prevLevel == level) {
                         System.out.println("Next point level: " + level);
 
@@ -158,20 +178,44 @@ public class GeoJSONDijkstra {
                         polylineOptions.add(nextPoint);
                     } else {
                         if (prevLevel != Integer.MIN_VALUE) {
-                            polylineOptions.add(nextPoint);
+//                            polylineOptions.add(nextPoint);
                             polylineOptionsInLevels.add(polylineOptions);
                         }
                         polylineOptions = new PolylineOptions().width(20).color(Color.RED).zIndex(Integer.MAX_VALUE - 1000);
+                        if (prevPoint != null) {
+                            pathArrayList.add(prevPoint);
+                            polylineOptions.add(prevPoint);
+                        }
                         pathArrayList.add(nextPoint);
                         polylineOptions.add(nextPoint);
                         prevLevel = level;
                     }
+                    prevPoint = nextPoint;
                 }
                 polylineOptionsInLevels.add(polylineOptions);
             } else {
                 System.out.println("Path not found!");
             }
         return polylineOptionsInLevels;
+    }
+
+    private LinkedList<Vertex> removePathDuplicates(LinkedList<Vertex> path) {
+        LinkedList<Vertex> pathWithoutDuplicates = new LinkedList<>();
+        HashMap<String, Integer> hashMap = new HashMap<>();
+        for (Vertex point : path) {
+            if (!hashMap.containsKey(point.getId())) {
+                hashMap.put(point.getId(), 1);
+                pathWithoutDuplicates.add(point);
+            }
+        }
+        return pathWithoutDuplicates;
+    }
+
+    private void initRouteMinMax() {
+        maxRouteLat = -100000;
+        maxRouteLng = -100000;
+        minRouteLat = 100000;
+        minRouteLng = 100000;
     }
 
     public double getPathLength(LatLngWithTags destination) {

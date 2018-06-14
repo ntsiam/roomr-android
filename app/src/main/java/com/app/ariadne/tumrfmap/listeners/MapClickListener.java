@@ -24,35 +24,33 @@ public class MapClickListener implements GoogleMap.OnMapClickListener {
 
     @Override
     public void onMapClick(LatLng latLng) {
-//        LinearLayout descriptionLayout = ((MapsActivity) context).findViewById(R.id.targetDescriptionLayout);
         double minDistance = 100.0;
+        boolean isClickHandled = false;
         //TODO: handle negative levels
-        int levelToShow = Integer.valueOf(mapUIElementsManager.level);
-        if (mapUIElementsManager.routePolylineOptionsInLevels != null) {
-            int currLevel = 0;
-            for (PolylineOptions routeLevel : mapUIElementsManager.routePolylineOptionsInLevels) {
-                for (LatLng point : routeLevel.getPoints()) {
-                    double tmpDistance = SphericalUtil.computeDistanceBetween(point, latLng);
-                    if (tmpDistance < minDistance) {
-                        minDistance = tmpDistance;
-                        levelToShow = currLevel;
+        if (mapUIElementsManager.level != null && !mapUIElementsManager.level.equals("")) {
+            int levelToShow = Integer.valueOf(mapUIElementsManager.level);
+            if (mapUIElementsManager.routePolylineOptionsInLevels != null) {
+                int currLevel = 0;
+                for (PolylineOptions routeLevel : mapUIElementsManager.routePolylineOptionsInLevels) {
+                    for (LatLng point : routeLevel.getPoints()) {
+                        double tmpDistance = SphericalUtil.computeDistanceBetween(point, latLng);
+                        if (tmpDistance < minDistance) {
+                            minDistance = tmpDistance;
+                            levelToShow = currLevel;
+                        }
                     }
+                    currLevel++;
                 }
-                currLevel++;
-            }
-            if (minDistance < 5.0) {
-                buttonClickListener.setFloorAsChecked(levelToShow);
-                mapUIElementsManager.managePolylineOptions(levelToShow);
+                if (minDistance < 5.0) {
+                    buttonClickListener.setFloorAsChecked(Math.abs(levelToShow - mapUIElementsManager.sourceLevel));
+                    mapUIElementsManager.addRouteLineFromPolyLineOptions(levelToShow);
+                    isClickHandled = true;
+                }
             }
         }
-//        if (descriptionLayout.getVisibility() == LinearLayout.VISIBLE) {
-//            ViewGroup.LayoutParams params = descriptionLayout.getLayoutParams();
-//            params.height = 50;
-//            descriptionLayout.setLayoutParams(params);
-//            Log.i(TAG, "clicked on map: " + latLng.toString());
-//            descriptionLayout.setOnClickListener(this);
-//            descriptionLayout.setVisibility(LinearLayout.GONE);
-//        }
+        if (!isClickHandled && mapUIElementsManager.target != null) {
+            mapUIElementsManager.toggleMapUIElementVisibility();
+        }
 
     }
 

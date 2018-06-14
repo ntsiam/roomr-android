@@ -231,7 +231,7 @@
         <TextView
             android:id="@+id/targetDescriptionHeader"
             android:layout_width="match_parent"
-            android:layout_height="34dp"
+            android:layout_height="wrap_content"
             android:layout_marginStart="10sp"
             android:layout_marginTop="5sp"
             android:textSize="18sp"
@@ -240,7 +240,7 @@
         <TextView
             android:id="@+id/targetDescriptionBody"
             android:layout_width="match_parent"
-            android:layout_height="32dp"
+            android:layout_height="wrap_content"
             android:layout_marginStart="10sp"
             android:textSize="14sp" />
 

@@ -20,6 +20,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 //import static com.roomr.ariadne.tumnavigator.MapLocationListener.gpsLocation;
 
@@ -49,11 +50,13 @@ public class GeoJsonMap {
     public ArrayList<String> mapLevels = new ArrayList<>();
     public ArrayList<ArrayList<GeoJsonFeature>> mapInLevels = new ArrayList<>();
     public static final int[] mapSources = {R.raw.indoor_path_ga_mi};
+    HashMap<String, Entrance> entranceHashMap;
 
 
 
     public GeoJsonMap(GoogleMap mMap) {
         this.mMap = mMap;
+        entranceHashMap = new HashMap<>();
     }
 
     public void loadIndoorGeometry(Context appContext, int currentLevel) {
@@ -192,8 +195,8 @@ public class GeoJsonMap {
 
     public void loadIndoorTopology(Context appContext) {
         resetGlobalPathVariables();
-        sourcePointsIds.add("My Location");
-        sourcePointsIds.add("Entrance of building");
+//        sourcePointsIds.add("My Location");
+//        sourcePointsIds.add("Entrance of building");
         indoorTopologyLayer = new ArrayList<>();
         ArrayList<JSONObject> geojsonMaps = new ArrayList<>();
         try {
@@ -282,7 +285,6 @@ public class GeoJsonMap {
         }
     }
 
-
     private void handleTargetPoint(GeoJsonFeature feature) {
         LatLng latLng = ((LatLng) feature.getGeometry().getGeometryObject());
         targetPoints.add(latLng);
@@ -290,7 +292,12 @@ public class GeoJsonMap {
         int level = 0;
         String id = "";
         String ref = "";
+        String address = "";
+        String building = "";
+        String plz = "";
+        String city = "";
         boolean isEntrance = false;
+        String buildingId = "";
         Iterable props = feature.getProperties();
         for (Object prop : props) {
             String property = prop.toString();
@@ -301,13 +308,32 @@ public class GeoJsonMap {
                     levels.add(tempLevel);
                 }
             }
-            if (property.contains("id=")) {
+            if (property.contains("building_id=")) {
+                Log.i(TAG, "building_id: " + GeoJsonHelper.getValueOfProperty(property));
+                buildingId = GeoJsonHelper.getValueOfProperty(property);
+
+            } else if (property.contains("id=")) {
                 id = GeoJsonHelper.getValueOfProperty(property);
-                //                System.out.println("New point, id: " + id);
+                System.out.println("New point, id: " + id);
+                if (id.equals("entrance")) {
+                    isEntrance = true;
+                }
             }
             if (property.contains("entrance=")) {
                 isEntrance = true;
                 Log.i(TAG, "Entrance: ");
+            }
+            if (property.contains("address=")) {
+                address = GeoJsonHelper.getValueOfProperty(property);
+            }
+            if (property.contains("city=")) {
+                city = GeoJsonHelper.getValueOfProperty(property);
+            }
+            if (property.contains("plz=")) {
+                plz = GeoJsonHelper.getValueOfProperty(property);
+            }
+            if (property.contains("building=")) {
+                building = GeoJsonHelper.getValueOfProperty(property);
             }
             if (property.contains("ref=")) {
                 Log.i(TAG, "Has ref: " + GeoJsonHelper.getValueOfProperty(property));
@@ -316,18 +342,32 @@ public class GeoJsonMap {
         }
 
 
-        if (levels.size() > 0 && !id.equals("")) {
-            LatLngWithTags taggedPoint = new LatLngWithTags(latLng, String.valueOf(levels.get(0)), id);
-//            System.out.println("TaggedPoint: " + taggedPoint);
+        if (!isEntrance && levels.size() > 0 && !id.equals("") && !id.equals("entrance")) {
+            LatLngWithTags taggedPoint = new LatLngWithTags(latLng, String.valueOf(levels.get(0)), id, buildingId);
+            id = "";
+//            if (!buildingId.equals("")) {
+//                taggedPoint.setBuildingId(buildingId);
+//            }
+            System.out.println("TaggedPoint: " + taggedPoint);
             targetPointsTagged.add(taggedPoint);
             targetPointsIds.add(taggedPoint.getId());
             sourcePointsIds.add(taggedPoint.getId());
         } else if (isEntrance) {
-            LatLngWithTags taggedPoint = new LatLngWithTags(latLng, "0", ref);
+            id += " " + buildingId;
+            LatLngWithTags taggedPoint = new LatLngWithTags(latLng, "0", id, buildingId);
             targetPointsTagged.add(taggedPoint);
             targetPointsIds.add(taggedPoint.getId());
             sourcePointsIds.add(taggedPoint.getId());
-
+            Log.i(TAG, "There is an entrance");
+            if (!building.equals("") && !address.equals("") && !city.equals("") && !plz.equals("")) {
+                Entrance newEntrance = new Entrance(address, building, city, plz, taggedPoint);
+                Log.i(TAG, "Add new entrance: " + newEntrance.getAddress());
+                address = "";
+                building = "";
+                plz = "";
+                city = "";
+                entranceHashMap.put(buildingId, newEntrance);
+            }
 //            System.out.println("No tagged points!");
         }
     }
@@ -406,6 +446,11 @@ public class GeoJsonMap {
             return null;
         }
     }
+
+    public Entrance findEntranceForDestination(LatLngWithTags destination) {
+        return entranceHashMap.get(destination.getBuildingId());
+    }
+
 
 //    public void addParticlesOnMap(ArrayList<Particle> particles, ParticleDeadReckoning deadReckoning) {
 ////        System.out.println("Add particles on Map, size: " + particles.size());

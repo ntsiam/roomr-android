@@ -7,6 +7,7 @@ import android.graphics.Point;
 import android.os.Handler;
 import android.util.Log;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -15,15 +16,19 @@ import android.widget.ToggleButton;
 
 import com.app.ariadne.tumrfmap.MapsActivity;
 import com.app.ariadne.tumrfmap.R;
+import com.app.ariadne.tumrfmap.geojson.Entrance;
+import com.app.ariadne.tumrfmap.geojson.GeoJsonMap;
 import com.app.ariadne.tumrfmap.geojson.LatLngWithTags;
 import com.app.ariadne.tumrfmap.listeners.ButtonClickListener;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.Projection;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
@@ -55,12 +60,24 @@ public class MapUIElementsManager {
     public int destinationLevel;
     public ArrayList<Polyline> routeLines;
     ButtonClickListener buttonClickListener;
+    ArrayList<Marker> routeMarkers;
+    GeoJsonMap geoJsonMap;
+    boolean areMapElementsVisible;
+    LinearLayout descriptionLayout;
+    EditText destinationEditText;
+    ImageButton cancelButton;
 
 
-    public MapUIElementsManager(Context context, ButtonClickListener buttonClickListener, GoogleMap mMap) {
+
+    public MapUIElementsManager(Context context, ButtonClickListener buttonClickListener, GoogleMap mMap, GeoJsonMap geoJsonMap) {
         this.context = context;
         this.buttonClickListener = buttonClickListener;
         this.mMap = mMap;
+        this.geoJsonMap = geoJsonMap;
+        areMapElementsVisible = true;
+        descriptionLayout = ((MapsActivity) context).findViewById(R.id.targetDescriptionLayout);
+        destinationEditText = ((MapsActivity) context).findViewById(R.id.findDestination);
+        cancelButton = ((MapsActivity) context).findViewById(R.id.cancel_button);
     }
 
     public void managePolylineOptions(int requestedLevel) {
@@ -88,12 +105,35 @@ public class MapUIElementsManager {
 
     }
 
+    public void toggleMapUIElementVisibility() {
+        if (areMapElementsVisible) {
+            areMapElementsVisible = false;
+
+            if (descriptionLayout.getVisibility() == LinearLayout.VISIBLE) {
+//                ViewGroup.LayoutParams params = descriptionLayout.getLayoutParams();
+//                params.height = 50;
+//                descriptionLayout.setLayoutParams(params);
+//                Log.i(TAG, "clicked on map: " + latLng.toString());
+//                descriptionLayout.setOnClickListener(this);
+                descriptionLayout.setVisibility(LinearLayout.GONE);
+                destinationEditText.setVisibility(EditText.GONE);
+                cancelButton.setVisibility(ImageButton.GONE);
+            }
+
+        } else {
+            descriptionLayout.setVisibility(LinearLayout.VISIBLE);
+            destinationEditText.setVisibility(EditText.VISIBLE);
+            cancelButton.setVisibility(ImageButton.VISIBLE);
+            areMapElementsVisible = true;
+        }
+    }
+
     public void setDestinationOnMap(String destinationId) {
         target = findDestinationFromId(destinationId);
         if (target != null) {
 //            destinationEditText = findViewById(R.id.findDestination);
             addMarkerAndZoomCameraOnTarget(target);
-            addDestinationDescription();
+            addDestinationDescription(target);
             buttonClickListener.showDestinationFoundButtons(destinationId);
 
             int level = findLevelFromId(target.getId());
@@ -106,10 +146,14 @@ public class MapUIElementsManager {
         removeDestinationMarker();
         Projection projection = mMap.getProjection();
         Point mapPoint = projection.toScreenLocation(target.getLatlng());
-        destinationMarker = mMap.addMarker(new MarkerOptions().position(target.getLatlng())
-                .title(target.getId()));
+        addDestinationMarker(target);
         mMap.animateCamera(CameraUpdateFactory.newCameraPosition(new CameraPosition(target.getLatlng(),
                 18, mMap.getCameraPosition().tilt, mMap.getCameraPosition().bearing)));
+    }
+
+    private void addDestinationMarker(LatLngWithTags target) {
+        destinationMarker = mMap.addMarker(new MarkerOptions().position(target.getLatlng())
+                .title(target.getId()));
     }
 
 
@@ -174,6 +218,8 @@ public class MapUIElementsManager {
             index = routePolylineOptionsInLevels.size() - 1;
         } else if (sourceLevel < level && destinationLevel > level) {
             index = Math.abs(level - sourceLevel);
+        } else if (sourceLevel > level && destinationLevel < level) {
+            index = Math.abs(level - sourceLevel);
         }
         Log.i(TAG, "Polyline index returned: " + index + ", for level: " + level + ". Levels: " + routePolylineOptionsInLevels.size());
         return index;
@@ -214,6 +260,7 @@ public class MapUIElementsManager {
         removeRouteLine();
         routePolylineOptionsInLevels = null;
         routePolylineOptions = null;
+        resetRouteMarkers();
     }
 
     public void removeDestinationMarker() {
@@ -240,45 +287,90 @@ public class MapUIElementsManager {
         descriptionTextBody.setText("");
     }
 
-    public void addDestinationDescription() {
+    public void addDestinationDescription(LatLngWithTags latLngWithTags) {
+        Log.i(TAG, "Find entrance for destination: " + latLngWithTags + ", buildingId: " + latLngWithTags.getBuildingId());
+        Entrance entrance = geoJsonMap.findEntranceForDestination(latLngWithTags);
         Activity activity = (MapsActivity) context;
         LinearLayout descriptionLayout = activity.findViewById(R.id.targetDescriptionLayout);
-        descriptionLayout.setVisibility(LinearLayout.VISIBLE);
-        TextView descriptionText = activity.findViewById(R.id.targetDescriptionHeader);
-        descriptionText.setText(String.format("%s, Garching MI Builiding", target.getId()));
-        TextView descriptionTextBody = activity.findViewById(R.id.targetDescriptionBody);
-        descriptionTextBody.setText("Bolzmanstrasse 3");
+        TextView destinationTextview = activity.findViewById(R.id.findDestination);
+        if (entrance != null) {
+            Log.i(TAG, "Entrance found: " + entrance.getAddress());
+            destinationTextview.setText(target.getId());
+            descriptionLayout.setVisibility(LinearLayout.VISIBLE);
+            TextView descriptionText = activity.findViewById(R.id.targetDescriptionHeader);
+            descriptionText.setText(String.format("%s, %s", target.getId(), entrance.getBuilding()));
+            TextView descriptionTextBody = activity.findViewById(R.id.targetDescriptionBody);
+            descriptionTextBody.setText(String.format("%s, %s, %s", entrance.getAddress(), entrance.getPlz(), entrance.getCity()));
+        } else {
+
+            descriptionLayout.setVisibility(LinearLayout.GONE);
+            destinationTextview.setText("");
+        }
     }
 
-
-    public void handleRoutePolyline(Handler routeHandler) {
+    public void handleRoutePolyline(Handler routeHandler, final LatLngWithTags target, final LatLng minPoint, final LatLng maxPoint) {
         if (routePolylineOptionsInLevels != null && routePolylineOptionsInLevels.size() > 0) {
             routePolylineOptions = routePolylineOptionsInLevels.get(0);
             routeHandler.post(new Runnable() {
                 public void run() {
+                    //back on UI thread...
                     ArrayList<ArrayList<LatLng>> route = new ArrayList<>();
                     if (routePolylineOptions != null && routePolylineOptions.getPoints().size() > 0) {
                         route.add(ListToArrayList(routePolylineOptions.getPoints()));
 //                                currentLevel = Integer.valueOf(dijkstra.level);
-                        moveCameraToStartingPosition();
+                        moveCameraToStartingPosition(minPoint, maxPoint);
                         removeRouteLine();
                         routeLines = new ArrayList<>();
                         routeLines.add(mMap.addPolyline(routePolylineOptions));
                     }
 //                    System.out.println("Number of points: " + route.get(0).size());
                     removeDestinationMarker();
+                    addDestinationMarker(target);
+                    addDestinationDescription(target);
                     removeSourceMarker();
                     addSourceCircle();
                     buttonClickListener.setFloorAsChecked(sourceLevel);
 
                     ProgressBar progressBar = ((MapsActivity)(context)).findViewById(R.id.progressBar2);
                     progressBar.setVisibility(ProgressBar.GONE);
-
-                    //back on UI thread...
+                    addRouteMarkers();
                 }
             });
         }
 
+    }
+
+    private void addRouteMarkers() {
+        resetRouteMarkers();
+        for (int i = 1; i < routePolylineOptionsInLevels.size(); i++) {
+            Marker stair;
+            if (sourceLevel < destinationLevel) {
+                stair = mMap.addMarker(new MarkerOptions()
+                        .position(routePolylineOptionsInLevels.get(i - 1).getPoints().get(routePolylineOptionsInLevels.get(i - 1).getPoints().size() - 1))
+                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.stairs_up)).title("Take the stairs up one level"));
+            } else {
+                stair = mMap.addMarker(new MarkerOptions()
+                        .position(routePolylineOptionsInLevels.get(i - 1).getPoints().get(routePolylineOptionsInLevels.get(i - 1).getPoints().size() - 1))
+                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.stairs_down)).title("Take the stairs down one level"));
+            }
+            routeMarkers.add(stair);
+        }
+    }
+
+    private void resetRouteMarkers() {
+        if (routeMarkers!= null && routeMarkers.size() > 0) {
+            removeRouteMarkers();
+        }
+        routeMarkers = new ArrayList<>();
+    }
+
+    private void removeRouteMarkers() {
+        for (Marker marker : routeMarkers) {
+            if (marker != null) {
+                marker.remove();
+                marker = null;
+            }
+        }
     }
 
     public LatLngWithTags getDestination() {
@@ -293,10 +385,14 @@ public class MapUIElementsManager {
         }
     }
 
+    public void moveCameraToStartingPosition(LatLng minPoint, LatLng maxPoint) {
+        LatLngBounds routePosition = new LatLngBounds(
+                minPoint, maxPoint);
+        Log.i(TAG, "Southwest: " + minPoint);
+        Log.i(TAG, "Northeast: " + maxPoint);
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(routePosition.getCenter(), 18));
 
-
-    public void moveCameraToStartingPosition() {
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(source.getLatlng(), 18));
+//        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(source.getLatlng(), 18));
     }
 
 }

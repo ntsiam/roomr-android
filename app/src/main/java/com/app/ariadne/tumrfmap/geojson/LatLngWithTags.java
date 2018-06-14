@@ -8,11 +8,17 @@ public class LatLngWithTags {
     private LatLng latlng;
     private String id;
     private String level;
+    private String buildingId;
 
     public LatLngWithTags(LatLng latLng, String level, String id) {
         this.latlng = latLng;
         this.level = level;
         this.id = id;
+    }
+
+    public LatLngWithTags(LatLng latLng, String level, String id, String buildingId) {
+        this(latLng, level, id);
+        this.buildingId = buildingId;
     }
 
     public LatLngWithTags(double latitude, double longitude) {
@@ -42,6 +48,10 @@ public class LatLngWithTags {
         return level;
     }
 
+    public String getBuildingId() {
+        return buildingId;
+    }
+
     public void setLatlng(LatLng location) {
         this.latlng = location;
     }
@@ -52,6 +62,10 @@ public class LatLngWithTags {
 
     public void setLevel(String level) {
         this.level = level;
+    }
+
+    public void setBuildingId(String buildingId) {
+        this.buildingId = buildingId;
     }
 
     public String toString() {
@@ -69,5 +83,26 @@ public class LatLngWithTags {
         }
         return latLngWithTags;
     }
+
+    @Override
+    public final boolean equals(Object var1) {
+        if (this == var1) {
+            return true;
+        } else if (!(var1 instanceof LatLngWithTags)) {
+            return false;
+        } else {
+            LatLngWithTags var2 = (LatLngWithTags) var1;
+            if (var2.getBuildingId() != null && this.getBuildingId() != null) {
+                if (var2.getLevel() != null && this.getLevel() != null) {
+                    return Double.doubleToLongBits(this.getLatlng().latitude) == Double.doubleToLongBits(var2.getLatlng().latitude)
+                            && Double.doubleToLongBits(this.getLatlng().longitude) == Double.doubleToLongBits(var2.getLatlng().longitude)
+                            && this.getId().equals(var2.getId()) && this.getBuildingId().equals(var2.getBuildingId())
+                            && this.getLevel().equals(var2.getLevel());
+                }
+            }
+            return false;
+        }
+    }
+
 
 }

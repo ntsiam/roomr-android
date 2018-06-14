@@ -51,7 +51,13 @@ public class FindDestinationActivity extends Activity implements AdapterView.OnI
 
         destination = findViewById(R.id.destination_autocomplete);
         ListView destinationList = findViewById(R.id.destination_list);
-        idsForDestination = new ArrayList<>(GeoJsonMap.sourcePointsIds);
+        idsForDestination = new ArrayList<>(GeoJsonMap.targetPointsIds);
+        for (int i = 0; i < idsForDestination.size(); i++) {
+            if (idsForDestination.get(i).equals("entrance") || idsForDestination.get(i).equals("Entrance of building")) {
+                Log.i("FindDestinationActivity", idsForDestination.get(i));
+                idsForDestination.remove(i);
+            }
+        }
         this.adapterForDestination =  new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, idsForDestination);
         destinationList.setAdapter(this.adapterForDestination);
         EditTextWatcher destinationTextWatcher = new EditTextWatcher(adapterForDestination);

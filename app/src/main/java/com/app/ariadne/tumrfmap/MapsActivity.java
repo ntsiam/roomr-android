@@ -32,6 +32,7 @@ import android.widget.Toast;
 import android.widget.ToggleButton;
 
 import com.app.ariadne.tumrfmap.geojson.BoundingBox;
+import com.app.ariadne.tumrfmap.geojson.Entrance;
 import com.app.ariadne.tumrfmap.geojson.GeoJSONDijkstra;
 import com.app.ariadne.tumrfmap.geojson.GeoJsonMap;
 import com.app.ariadne.tumrfmap.geojson.IndoorBuildingBoundsAndFloors;
@@ -107,9 +108,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mapFragment.getMapAsync(this);
 //        autoCompleteDestination = findViewById(R.id.multiAutoCompleteTextView);
 //        autoCompleteDestination.setTokenizer(new SpaceTokenizer());
-        buttonClickListener = new ButtonClickListener(this);
 
     }
+
 
     public void addTileProvider(final String level) {
         TileProvider tileProvider;
@@ -128,6 +129,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     .zIndex(100)
                     .fadeIn(false)
                     .transparency(0.0f));
+
         } else {
             Log.i(TAG, "Remove tiles");
             if (tileOverlay != null) {
@@ -150,27 +152,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     @Override
-    public void onMapReady(GoogleMap googleMap) {
-        mMap = googleMap;
-        mMap.setMinZoomPreference(10.0f);
-        LatLngBounds MUNICH = new LatLngBounds(
-                new LatLng(47.8173, 11.063), new LatLng(48.5361, 12.062));
-        mMap.setLatLngBoundsForCameraTarget(MUNICH);
-        mMap.setOnCircleClickListener(new CircleClickListener());
+    public void onRequestPermissionsResult(int permsRequestCode, String[] permissions, int[] grantResults) {
+        boolean isLocationAccepted = false;
+        switch (permsRequestCode) {
+            case 200:
+                isLocationAccepted = grantResults[0] == PackageManager.PERMISSION_GRANTED;
+//                boolean cameraAccepted = grantResults[1]==PackageManager.PERMISSION_GRANTED;
+                break;
 
-        // Add a marker in Sydney and move the camera
-        LatLng munich = new LatLng(48.137, 11.574);
-        //mMap.moveCamera(CameraUpdateFactory.newLatLng(munich));
-        mMap.moveCamera(CameraUpdateFactory.newCameraPosition(new CameraPosition(munich, 14, mMap.getCameraPosition().tilt,
-                mMap.getCameraPosition().bearing)));
-
-        mMap.setOnCameraIdleListener(buttonClickListener);
-//        mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(MUNICH, 0));
-
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissionToAccessLocation();
+        }
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
             // here to request the missing permissions, and then overriding
@@ -178,28 +169,69 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             //                                          int[] grantResults)
             // to handle the case where the user grants the permission. See the documentation
             // for ActivityCompat#requestPermissions for more details.
-            Toast.makeText(this, "No permissions!", Toast.LENGTH_SHORT).show();
             return;
         }
+        mMap.setMyLocationEnabled(true);
+
+
+    }
+
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        buttonClickListener = new ButtonClickListener(this);
+        mMap = googleMap;
+        mMap.setMinZoomPreference(10.0f);
+        LatLngBounds MUNICH = new LatLngBounds(
+                new LatLng(47.8173, 11.063), new LatLng(48.5361, 12.062));
+        mMap.setLatLngBoundsForCameraTarget(MUNICH);
+        mMap.setOnCircleClickListener(new CircleClickListener());
+
+//        LatLng munich = new LatLng(48.137, 11.574);
+        LatLng garching = new LatLng(48.262534, 11.667992);
+        //mMap.moveCamera(CameraUpdateFactory.newLatLng(munich));
+        mMap.moveCamera(CameraUpdateFactory.newCameraPosition(new CameraPosition(garching, 14, mMap.getCameraPosition().tilt,
+                mMap.getCameraPosition().bearing)));
+
+        mMap.setOnCameraIdleListener(buttonClickListener);
+//        mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(MUNICH, 0));
 
         geoJsonMap = new GeoJsonMap(mMap);
         geoJsonMap.loadIndoorTopology(this);
         dijkstra = new GeoJSONDijkstra(routablePath);
+        ArrayList<String> targetPointsIds = geoJsonMap.targetPointsIds;
+        targetPointsIds.remove("Entrance of building");
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
-                android.R.layout.simple_dropdown_item_1line, geoJsonMap.targetPointsIds);
+                android.R.layout.simple_dropdown_item_1line, targetPointsIds);
 //        autoCompleteDestination.setAdapter(adapter);
 //        autoCompleteDestination.setOnItemClickListener(this);
 
-        mMap.setMyLocationEnabled(true);
         mMap.setPadding(0,150,0,0);
-        Toast.makeText(this, "Camera position: " + mMap.getCameraPosition(), Toast.LENGTH_SHORT).show();
+//        Toast.makeText(this, "Camera position: " + mMap.getCameraPosition(), Toast.LENGTH_SHORT).show();
 
         mMap.setOnMyLocationButtonClickListener(new LocationButtonClickListener(this, mMap));
-        mapUIElementsManager = new MapUIElementsManager(this, buttonClickListener, mMap);
+        mapUIElementsManager = new MapUIElementsManager(this, buttonClickListener, mMap, geoJsonMap);
         buttonClickListener.setMapUIElementsManager(mapUIElementsManager);
         mapClickListener = new MapClickListener(this, buttonClickListener, mapUIElementsManager);
         mMap.setOnMapClickListener(mapClickListener);
         itemClickListener = new ItemClickListener(this, mapUIElementsManager, buttonClickListener);
+        requestPermissionToAccessLocation();
+
+//        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+//                != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this,
+//                Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+//            requestPermissionToAccessLocation();
+//            // TODO: Consider calling
+//            //    ActivityCompat#requestPermissions
+//            // here to request the missing permissions, and then overriding
+//            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+//            //                                          int[] grantResults)
+//            // to handle the case where the user grants the permission. See the documentation
+//            // for ActivityCompat#requestPermissions for more details.
+//            Toast.makeText(this, "No permissions!", Toast.LENGTH_SHORT).show();
+//            return;
+//        }
+//        mMap.setMyLocationEnabled(true);
+
     }
 
     public void cancelTarget(View view) {
@@ -258,32 +290,60 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         return level;
     }
 
-    private void handleRouteRequest(final String sourceName, final String targetName) {
-        if (!sourceName.equals("Building entrance") & !sourceName.equals("My Location")) {
-            mapUIElementsManager.source = findDestinationFromId(sourceName);
-            mapUIElementsManager.sourceLevel = findLevelFromId(sourceName);
+    private void handleRouteRequest(final String source, final String targetName) {
+        if (!source.equals("My Location") && !source.equals(targetName) && !(source.equals("Entrance of building")
+                && targetName.equals("entrance")) && !(targetName.equals("Entrance of building")
+                && source.equals("entrance"))) {
+            Log.i(TAG, "Source:  " + source);
+            if (source.equals("Entrance of building")){
+                mapUIElementsManager.target = findDestinationFromId(targetName);
+                mapUIElementsManager.source = geoJsonMap.findEntranceForDestination(mapUIElementsManager.target).getEntranceLatLngWithTags();
+            } else {
+                mapUIElementsManager.source = findDestinationFromId(source);
+            }
+            if (targetName.equals("Entrance of building")) {
+                mapUIElementsManager.target = geoJsonMap.findEntranceForDestination(mapUIElementsManager.source).getEntranceLatLngWithTags();
+            }
+            mapUIElementsManager.sourceLevel = findLevelFromId(source);
             Log.i(TAG, "Source level = " + mapUIElementsManager.sourceLevel);
             mapUIElementsManager.destinationLevel = findLevelFromId(targetName);
             Log.i(TAG, "Destination level = " + mapUIElementsManager.destinationLevel);
             if (mapUIElementsManager.source != null) {
                 Log.i(TAG, "Source found!");
-                mapUIElementsManager.target = findDestinationFromId(targetName);
+//                mapUIElementsManager.target = findDestinationFromId(targetName);
                 if (mapUIElementsManager.target != null) {
                     Log.i(TAG, "Destination found!");
                     dijkstra.startDijkstra(mapUIElementsManager.source);
                     mapUIElementsManager.routePolylineOptionsInLevels = null;
 //                    routePolylineOptionsGray = new PolylineOptions().width(15).color(Color.GRAY).zIndex(Integer.MAX_VALUE - 20);
                     mapUIElementsManager.routePolylineOptionsInLevels = dijkstra.getPath(mapUIElementsManager.target);
-                    mapUIElementsManager.handleRoutePolyline(routeHandler);
+                    LatLng minPoint = new LatLng(dijkstra.minRouteLat, dijkstra.minRouteLng);
+                    LatLng maxPoint = new LatLng(dijkstra.maxRouteLat, dijkstra.maxRouteLng);
+                    mapUIElementsManager.handleRoutePolyline(routeHandler, mapUIElementsManager.target, minPoint, maxPoint);
                 } else {
-                    Looper.prepare();
-                    Toast.makeText(this, "Destination could not be found", Toast.LENGTH_SHORT).show();
-                    cancelTarget(findViewById(R.id.targetDescriptionLayout));
+                    routeHandler.post(new Runnable() {
+                        public void run() {
+                            //back on UI thread...
+
+//                            Looper.prepare();
+//                            Toast.makeText(this, "Destination could not be found", Toast.LENGTH_SHORT).show();
+                            cancelTarget(findViewById(R.id.targetDescriptionLayout));
+                        }
+                    });
                 }
             } else {
-                Looper.prepare();
-                Toast.makeText(this, "Starting point could not be found", Toast.LENGTH_SHORT).show();
-                cancelTarget(findViewById(R.id.targetDescriptionLayout));
+//                Looper.prepare();
+                final View view = findViewById(R.id.targetDescriptionLayout);
+                routeHandler.post(new Runnable() {
+                    public void run() {
+
+//                Toast.makeText(this,"Starting point could not be found",Toast.LENGTH_SHORT).
+//
+//                        show();
+
+                        cancelTarget(view);
+                    }
+                });
             }
         }
     }
@@ -308,15 +368,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 mapUIElementsManager.targetName = data.getStringExtra("Destination");
                 Log.i(TAG, "Source: " + mapUIElementsManager.sourceName + ", Destination: " + mapUIElementsManager.targetName);
                 buttonClickListener.showDirectionsButtons();
-                ProgressBar progressBar = findViewById(R.id.progressBar2);
-                progressBar.setVisibility(ProgressBar.VISIBLE);
-                AsyncTask.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        handleRouteRequest(mapUIElementsManager.sourceName, mapUIElementsManager.targetName);
-                        //TODO your background code
+                if (!mapUIElementsManager.sourceName.equals("My Location") && !mapUIElementsManager.sourceName.equals(mapUIElementsManager.targetName)
+                        && !(mapUIElementsManager.sourceName.contains("ntrance")
+                        && mapUIElementsManager.targetName.contains("ntrance")) && !(mapUIElementsManager.targetName.contains("ntrance")
+                        && mapUIElementsManager.sourceName.contains("ntrance"))) {
+
+                    if (mapUIElementsManager.sourceName.contains("ntrance")) {
+                        mapUIElementsManager.sourceName = "Entrance of building";
                     }
-                });
+                    ProgressBar progressBar = findViewById(R.id.progressBar2);
+                    progressBar.setVisibility(ProgressBar.VISIBLE);
+                    AsyncTask.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            handleRouteRequest(mapUIElementsManager.sourceName, mapUIElementsManager.targetName);
+                            //TODO your background code
+                        }
+                    });
+                }
 
             }
         }

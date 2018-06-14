@@ -21,6 +21,47 @@
         <!--android:layout_height="wrap_content"-->
         <!--android:id="@+id/users_name_edit_text"/>-->
 
+        <!--<TextView-->
+        <!--android:id="@+id/label"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="match_parent"-->
+        <!--android:drawableLeft="@drawable/circle"-->
+        <!--android:drawablePadding="8dp"-->
+        <!--android:gravity="center_vertical"-->
+        <!--android:paddingLeft="10dp"-->
+        <!--android:paddingStart="10dp"-->
+        <!--android:text="Group"-->
+        <!--/>-->
+
+        <View
+            android:layout_width="7dp"
+            android:layout_height="45dp"
+            android:layout_alignEnd="@+id/view"
+            android:layout_alignTop="@+id/imageButton11"
+            android:layout_marginRight="9dp"
+            android:layout_marginTop="-5dp"
+            android:background="@android:color/darker_gray" />
+
+        <View
+            android:id="@+id/view"
+            android:layout_width="25dp"
+            android:layout_height="25dp"
+            android:layout_below="@+id/imageButton11"
+            android:layout_marginRight="2dp"
+            android:layout_marginTop="-5dp"
+            android:layout_toStartOf="@+id/destination"
+            android:background="@android:drawable/presence_invisible" />
+
+        <View
+            android:id="@+id/view3"
+            android:layout_width="25dp"
+            android:layout_height="25dp"
+            android:layout_above="@+id/imageButton11"
+            android:layout_marginBottom="-32dp"
+            android:layout_marginRight="2dp"
+            android:layout_toStartOf="@+id/destination"
+            android:background="@android:drawable/presence_invisible" />
+
         <AutoCompleteTextView
             android:id="@+id/starting_point"
             android:layout_width="240dp"
@@ -66,7 +107,9 @@
             android:layout_marginTop="32dp"
             android:layout_toEndOf="@+id/starting_point"
             android:background="@android:color/transparent"
-            android:src="@mipmap/ic_swap_vert_1" />
+            android:onClick="changeOriginDestination"
+            android:scaleType="fitXY"
+            android:src="@mipmap/ic_launcher_foreground" />
     </RelativeLayout>
 
 </RelativeLayout>

@@ -11,9 +11,13 @@ import android.widget.AutoCompleteTextView;
 
 import com.app.ariadne.tumrfmap.geojson.GeoJsonMap;
 
-public class FindOriginDestinationActivity extends Activity implements AdapterView.OnItemClickListener{
+import java.util.ArrayList;
+
+public class FindOriginDestinationActivity extends Activity implements AdapterView.OnItemClickListener, View.OnClickListener {
     String givenDestinationName;
     private static final String TAG = "SecondActivity";
+    AutoCompleteTextView autoCompleteSource;
+    AutoCompleteTextView autoCompleteDestination;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,15 +34,28 @@ public class FindOriginDestinationActivity extends Activity implements AdapterVi
 
         String previousActivity = activityThatCalled.getExtras().getString("callingActivity");
         givenDestinationName = activityThatCalled.getExtras().getString("destination");
-        AutoCompleteTextView autoCompleteDestination = findViewById(R.id.destination);
+         autoCompleteDestination = findViewById(R.id.destination);
         autoCompleteDestination.setText(givenDestinationName);
-        AutoCompleteTextView autoCompleteSource = findViewById(R.id.starting_point);
-        autoCompleteSource.setText("My location");
+        autoCompleteSource = findViewById(R.id.starting_point);
+        autoCompleteSource.setText("Entrance of building");
 
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
-                android.R.layout.simple_dropdown_item_1line, GeoJsonMap.sourcePointsIds);
-        autoCompleteDestination.setAdapter(adapter);
-        autoCompleteSource.setAdapter(adapter);
+        ArrayList<String> sourcePointsIds = GeoJsonMap.sourcePointsIds;
+
+        ArrayList<String> targetPointsIds = GeoJsonMap.targetPointsIds;
+        for (int i = 0; i < targetPointsIds.size(); i++) {
+            if (targetPointsIds.get(i).equals("entrance") || targetPointsIds.get(i).equals("Entrance of building")) {
+                targetPointsIds.remove(i);
+            }
+        }
+
+        ArrayAdapter<String> sourceAdapter = new ArrayAdapter<String>(this,
+                android.R.layout.simple_dropdown_item_1line, sourcePointsIds);
+        ArrayAdapter<String> destinationAdapter = new ArrayAdapter<String>(this,
+                android.R.layout.simple_dropdown_item_1line, targetPointsIds);
+        autoCompleteDestination.setAdapter(destinationAdapter);
+        autoCompleteSource.setAdapter(sourceAdapter);
+        autoCompleteSource.setOnItemClickListener(this);
+        autoCompleteSource.setOnClickListener(this);
         autoCompleteDestination.setOnItemClickListener(this);
 
 
@@ -80,6 +97,21 @@ public class FindOriginDestinationActivity extends Activity implements AdapterVi
     @Override
     public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
         Log.i("SECOND", "View clicked: " + view.getId());
+//        if (view.getId() == R.id.starting_point) {
+//            autoCompleteSource.setText("");
+//        }
+    }
+
+    private void resetView() {
+        AutoCompleteTextView autoCompleteSource = findViewById(R.id.starting_point);
+        autoCompleteSource.setText("Entrance of building");
+    }
+
+    public void changeOriginDestination(View view) {
+        String destination = autoCompleteDestination.getText().toString();
+        String origin = autoCompleteSource.getText().toString();
+        autoCompleteDestination.setText(origin);
+        autoCompleteSource.setText(destination);
     }
 
     @Override
@@ -90,5 +122,13 @@ public class FindOriginDestinationActivity extends Activity implements AdapterVi
         setResult(RESULT_CANCELED, goingBack);
         // Close this Activity
         finish();
+    }
+
+    @Override
+    public void onClick(View view) {
+        if (view.getId() == R.id.starting_point) {
+            autoCompleteSource.setText("");
+        }
+
     }
 }

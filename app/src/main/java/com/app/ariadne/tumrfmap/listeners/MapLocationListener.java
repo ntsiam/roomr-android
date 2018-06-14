@@ -70,8 +70,8 @@ public class MapLocationListener implements LocationListener {
         gpsLocation = latLng;
         if (isFirstTime) {
             Log.i("LocationListener", "Got new location: " + gpsLocation.toString());
-            Toast.makeText(mainActivity, "GPS location: " + gpsLocation.toString() + ", accuracy: " + accuracy
-                    + ", altitude: " + altitude, Toast.LENGTH_SHORT).show();
+//            Toast.makeText(mainActivity, "GPS location: " + gpsLocation.toString() + ", accuracy: " + accuracy
+//                    + ", altitude: " + altitude, Toast.LENGTH_SHORT).show();
             isFirstTime = false;
         }
 
