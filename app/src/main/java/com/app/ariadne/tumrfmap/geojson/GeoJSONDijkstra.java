@@ -202,7 +202,7 @@ public class GeoJSONDijkstra {
     private LinkedList<Vertex> removePathDuplicates(LinkedList<Vertex> path) {
         LinkedList<Vertex> pathWithoutDuplicates = new LinkedList<>();
         HashMap<String, Integer> hashMap = new HashMap<>();
-        for (Vertex point : path) {
+         for (Vertex point : path) {
             if (!hashMap.containsKey(point.getId())) {
                 hashMap.put(point.getId(), 1);
                 pathWithoutDuplicates.add(point);

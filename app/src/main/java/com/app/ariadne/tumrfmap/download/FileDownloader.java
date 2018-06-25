@@ -2,6 +2,7 @@ package com.app.ariadne.tumrfmap.download;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.util.Log;
 import android.widget.ImageView;
 
 import com.android.volley.RequestQueue;
@@ -9,6 +10,7 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageRequest;
 import com.android.volley.toolbox.Volley;
+import com.app.ariadne.tumrfmap.tileProvider.CustomMapTileProvider;
 
 public class FileDownloader {
     Context context;
@@ -27,11 +29,13 @@ public class FileDownloader {
 
 
     public void downloadFile(String url, final String destinationPath, final String filename) {
+        Log.i("Downloader", "URL: " + url);
         ImageRequest imgRequest = new ImageRequest(url, new Response.Listener<Bitmap>() {
             @Override
             public void onResponse(Bitmap response) {
                 //do stuff
                 fileStorageManager.writeToExternalStoragePublic(destinationPath, filename, response);
+//                tileProvider.getTile(x, y, zoom);
             }
         }, 0, 0, ImageView.ScaleType.CENTER_CROP, Bitmap.Config.ARGB_8888,
                 new Response.ErrorListener() {

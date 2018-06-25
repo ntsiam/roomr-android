@@ -3,6 +3,7 @@ package com.app.ariadne.tumrfmap;
 import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Point;
@@ -10,6 +11,8 @@ import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Looper;
+import android.preference.PreferenceFragment;
+import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
@@ -90,8 +93,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     ButtonClickListener buttonClickListener;
     MapClickListener mapClickListener;
     ItemClickListener itemClickListener;
-
-    public final String TILESERVER_IP = "ec2-18-191-35-229.us-east-2.compute.amazonaws.com";
     GeoJsonMap geoJsonMap;
 
     public static final int MY_PERMISSIONS_REQUEST_FINE_LOCATION = 1;
@@ -100,6 +101,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+        PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
 //        roomDestination = (MultiAutoCompleteTextView) findViewById(R.id.multiAutoCompleteTextView);
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
@@ -110,7 +112,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //        autoCompleteDestination.setTokenizer(new SpaceTokenizer());
 
     }
-
 
     public void addTileProvider(final String level) {
         TileProvider tileProvider;
@@ -242,7 +243,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     public void onFindOriginDestinationClick() {
-        Intent getNameScreenIntent = new Intent(this, FindOriginDestinationActivity.class);
+        startActivityForResults(FindOriginDestinationActivity.class);
+    }
+
+    public void onFindDestinationClick(View view) {
+        startActivityForResults(FindDestinationActivity.class);
+    }
+
+    public void startActivityForResults(Class activityClass) {
+        Intent getNameScreenIntent = new Intent(this, activityClass);
         // We ask for the Activity to start and don't expect a result to be sent back
         // startActivity(getNameScreenIntent);
         // We use startActivityForResult when we expect a result to be sent back
@@ -250,20 +259,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         // To send data use putExtra with a String name followed by its value
         getNameScreenIntent.putExtra("callingActivity", "MapsActivity");
-        getNameScreenIntent.putExtra("destination", mapUIElementsManager.target.getId());
-        startActivityForResult(getNameScreenIntent, result);
-    }
 
-    public void onFindDestinationClick(View view) {
-        Intent findDestinationIntent = new Intent(this, FindDestinationActivity.class);
-        // We ask for the Activity to start and don't expect a result to be sent back
-        // startActivity(getNameScreenIntent);
-        // We use startActivityForResult when we expect a result to be sent back
-        final int result = 1;
-        // To send data use putExtra with a String name followed by its value
-        findDestinationIntent.putExtra("callingActivity", "MapsActivity");
-//        getDestinationScreenIntent.putExtra("destination", target.getId());
-        startActivityForResult(findDestinationIntent, result);
+        if (mapUIElementsManager.target != null) {
+            getNameScreenIntent.putExtra("destination", mapUIElementsManager.target.getId());
+        }
+        startActivityForResult(getNameScreenIntent, result);
+
     }
 
 
@@ -296,23 +297,25 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 && source.equals("entrance"))) {
             Log.i(TAG, "Source:  " + source);
             if (source.equals("Entrance of building")){
-                mapUIElementsManager.target = findDestinationFromId(targetName);
+//                mapUIElementsManager.target = findDestinationFromId(targetName);
                 mapUIElementsManager.source = geoJsonMap.findEntranceForDestination(mapUIElementsManager.target).getEntranceLatLngWithTags();
             } else {
                 mapUIElementsManager.source = findDestinationFromId(source);
             }
             if (targetName.equals("Entrance of building")) {
                 mapUIElementsManager.target = geoJsonMap.findEntranceForDestination(mapUIElementsManager.source).getEntranceLatLngWithTags();
+            } else {
+                mapUIElementsManager.target = findDestinationFromId(targetName);
             }
             mapUIElementsManager.sourceLevel = findLevelFromId(source);
             Log.i(TAG, "Source level = " + mapUIElementsManager.sourceLevel);
             mapUIElementsManager.destinationLevel = findLevelFromId(targetName);
             Log.i(TAG, "Destination level = " + mapUIElementsManager.destinationLevel);
             if (mapUIElementsManager.source != null) {
-                Log.i(TAG, "Source found!");
+                Log.i(TAG, "Source found! : " + mapUIElementsManager.source.getId());
 //                mapUIElementsManager.target = findDestinationFromId(targetName);
                 if (mapUIElementsManager.target != null) {
-                    Log.i(TAG, "Destination found!");
+                    Log.i(TAG, "Destination found! : " + mapUIElementsManager.target.getId());
                     dijkstra.startDijkstra(mapUIElementsManager.source);
                     mapUIElementsManager.routePolylineOptionsInLevels = null;
 //                    routePolylineOptionsGray = new PolylineOptions().width(15).color(Color.GRAY).zIndex(Integer.MAX_VALUE - 20);
@@ -389,5 +392,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             }
         }
+    }
+
+    /**
+     * This is used for loading the settings. A new activity should be created and this should be placed in the
+     * onCreate() method.
+     * The settings are stored inside the res/xml/preferences.xml file
+     * @param view nothing necessary at all, it's just there because the onClick() callback for the relevant imagebutton
+     *             (imageButton2) is specified in the activity_maps.xml - and therefore a View parameter is passed by default
+     */
+    public void startPreferencesFragment(View view) {
+        // Display the fragment as the main content.
+        getFragmentManager().beginTransaction()
+                .replace(android.R.id.content, new SettingsFragment())
+                .commit();
     }
 }

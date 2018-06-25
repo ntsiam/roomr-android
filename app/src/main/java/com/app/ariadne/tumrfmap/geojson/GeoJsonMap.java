@@ -49,7 +49,7 @@ public class GeoJsonMap {
     public static LatLngWithTags startingPoint;
     public ArrayList<String> mapLevels = new ArrayList<>();
     public ArrayList<ArrayList<GeoJsonFeature>> mapInLevels = new ArrayList<>();
-    public static final int[] mapSources = {R.raw.indoor_path_ga_mi};
+    public static final int[] mapSources = {R.raw.routing_all};
     HashMap<String, Entrance> entranceHashMap;
 
 
@@ -441,8 +441,10 @@ public class GeoJsonMap {
             targetIndex++;
         }
         if (targetIndex < targetPointsTagged.size()) {
+            Log.i("findDestinationFromId", "Point is: " + targetPointsTagged.get(targetIndex).getId());
             return targetPointsTagged.get(targetIndex);
         } else {
+            Log.i("findDestinationFromId", "Point not found!");
             return null;
         }
     }

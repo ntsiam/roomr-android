@@ -80,30 +80,30 @@ public class MapUIElementsManager {
         cancelButton = ((MapsActivity) context).findViewById(R.id.cancel_button);
     }
 
-    public void managePolylineOptions(int requestedLevel) {
-        int indexOfLevelInButtonList = MAX_FLOOR - requestedLevel;
-        int currentIndexInButtonList = 0;
-        for (ToggleButton levelButton: buttonClickListener.floorButtonList) {
-            if (currentIndexInButtonList != indexOfLevelInButtonList) {
-                levelButton.setChecked(false);
-            } else {
-                if (!levelButton.isChecked()) {
-                    Log.i(TAG, "Entered here");
-                    level = ""; //no tiles for "0" - ground floor is ""
-                    if (routePolylineOptionsInLevels != null) {
-                        addRouteLineFromPolyLineOptions(Integer.MIN_VALUE);
-                    }
-                } else {
-                    if (routePolylineOptionsInLevels != null) {
-                        int polyLineIndex = findPolyLineIndex(requestedLevel);
-                        addRouteLineFromPolyLineOptions(polyLineIndex);
-                    }
-                }
-            }
-            currentIndexInButtonList++;
-        }
-
-    }
+//    public void managePolylineOptions(int requestedLevel) {
+//        int indexOfLevelInButtonList = MAX_FLOOR - requestedLevel;
+//        int currentIndexInButtonList = 0;
+//        for (ToggleButton levelButton: buttonClickListener.floorButtonList) {
+//            if (currentIndexInButtonList != indexOfLevelInButtonList) {
+//                levelButton.setChecked(false);
+//            } else {
+//                if (!levelButton.isChecked()) {
+//                    Log.i(TAG, "Entered here");
+//                    level = ""; //no tiles for "0" - ground floor is ""
+//                    if (routePolylineOptionsInLevels != null) {
+//                        addRouteLineFromPolyLineOptions(Integer.MIN_VALUE);
+//                    }
+//                } else {
+//                    if (routePolylineOptionsInLevels != null) {
+//                        int polyLineIndex = findPolyLineIndex(requestedLevel);
+//                        addRouteLineFromPolyLineOptions(polyLineIndex);
+//                    }
+//                }
+//            }
+//            currentIndexInButtonList++;
+//        }
+//
+//    }
 
     public void toggleMapUIElementVisibility() {
         if (areMapElementsVisible) {
