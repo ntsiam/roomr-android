@@ -347,11 +347,11 @@ public class MapUIElementsManager {
             if (sourceLevel < destinationLevel) {
                 stair = mMap.addMarker(new MarkerOptions()
                         .position(routePolylineOptionsInLevels.get(i - 1).getPoints().get(routePolylineOptionsInLevels.get(i - 1).getPoints().size() - 1))
-                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.stairs_up)).title("Take the stairs up one level"));
+                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.stairs_up)).snippet("one level").title("Take the stairs up"));
             } else {
                 stair = mMap.addMarker(new MarkerOptions()
                         .position(routePolylineOptionsInLevels.get(i - 1).getPoints().get(routePolylineOptionsInLevels.get(i - 1).getPoints().size() - 1))
-                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.stairs_down)).title("Take the stairs down one level"));
+                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.stairs_down)).snippet("one level").title("Take the stairs down"));
             }
             routeMarkers.add(stair);
         }
