@@ -134,7 +134,7 @@ public class DijkstraAlgorithm {
             path.add(step);
         }
         // Put it into the correct order
-        Collections.reverse(path);
+//        Collections.reverse(path);
         return path;
     }
 
