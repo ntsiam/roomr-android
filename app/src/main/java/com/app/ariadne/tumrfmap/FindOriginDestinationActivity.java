@@ -1,11 +1,13 @@
 package com.app.ariadne.tumrfmap;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
@@ -101,9 +103,15 @@ public class FindOriginDestinationActivity extends Activity implements AdapterVi
     @Override
     public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
         Log.i("SECOND", "View clicked: " + view.getId());
-//        if (view.getId() == R.id.starting_point) {
-//            autoCompleteSource.setText("");
-//        }
+        /*
+        if (view.getId() == R.id.starting_point) {
+            autoCompleteSource.setText("");
+        }
+        */
+        InputMethodManager in = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (in != null) {
+            in.hideSoftInputFromWindow(view.getApplicationWindowToken(), 0);
+        }
     }
 
     private void resetView() {

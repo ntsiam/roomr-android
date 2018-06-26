@@ -355,6 +355,7 @@ public class MapUIElementsManager {
             }
             routeMarkers.add(stair);
         }
+        routeMarkers.get(0).showInfoWindow();
     }
 
     private void resetRouteMarkers() {
