@@ -265,6 +265,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (mapUIElementsManager.target != null) {
             getNameScreenIntent.putExtra("destination", mapUIElementsManager.target.getId());
         }
+        if (mapUIElementsManager.source != null) {
+            getNameScreenIntent.putExtra("source", mapUIElementsManager.source.getId());
+        }
         startActivityForResult(getNameScreenIntent, result);
 
     }

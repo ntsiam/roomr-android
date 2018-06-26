@@ -11,6 +11,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
+import android.widget.Button;
 
 import com.app.ariadne.tumrfmap.geojson.GeoJsonMap;
 
@@ -18,9 +19,11 @@ import java.util.ArrayList;
 
 public class FindOriginDestinationActivity extends Activity implements AdapterView.OnItemClickListener, View.OnClickListener, View.OnTouchListener {
     String givenDestinationName;
+    String givenSourceName;
     private static final String TAG = "SecondActivity";
     AutoCompleteTextView autoCompleteSource;
     AutoCompleteTextView autoCompleteDestination;
+    Button getDirectionsButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,6 +31,7 @@ public class FindOriginDestinationActivity extends Activity implements AdapterVi
 
         // Set the layout for the layout we created
         setContentView(R.layout.find_origin_destination_layout);
+        getDirectionsButton = findViewById(R.id.directionsButton);
 
         // Get the Intent that called for this Activity to open
 
@@ -37,10 +41,15 @@ public class FindOriginDestinationActivity extends Activity implements AdapterVi
 
         String previousActivity = activityThatCalled.getExtras().getString("callingActivity");
         givenDestinationName = activityThatCalled.getExtras().getString("destination");
-         autoCompleteDestination = findViewById(R.id.destination);
+        givenSourceName = activityThatCalled.getExtras().getString("source");
+        autoCompleteDestination = findViewById(R.id.destination);
         autoCompleteDestination.setText(givenDestinationName);
         autoCompleteSource = findViewById(R.id.starting_point);
-        autoCompleteSource.setText("Entrance of building");
+        if (givenSourceName == null) {
+            autoCompleteSource.setText("Entrance of building");
+        } else {
+            autoCompleteSource.setText(givenSourceName);
+        }
 
         ArrayList<String> sourcePointsIds = GeoJsonMap.sourcePointsIds;
 
@@ -80,24 +89,29 @@ public class FindOriginDestinationActivity extends Activity implements AdapterVi
         String destinationName = String.valueOf(destination.getText());
         String sourceName = String.valueOf(source.getText());
 
-        if (destinationName == null) {
-            destinationName = givenDestinationName;
+//        if (destinationName == null) {
+//            destinationName = givenDestinationName;
+//        }
+//        if (sourceName == null) {
+//            sourceName = givenSourceName;
+//        }
+        if (sourceName != null && destinationName != null && !sourceName.equals("") && !destinationName.equals("")) {
+            // Define our intention to go back to ActivityMain
+            Intent goingBack = new Intent();
+
+            // Define the String name and the value to assign to it
+            goingBack.putExtra("Activity Name", "FindOriginDestination");
+            goingBack.putExtra("Starting point", sourceName);
+            goingBack.putExtra("Destination", destinationName);
+
+            // Sends data back to the parent and can use RESULT_CANCELED, RESULT_OK, or any
+            // custom values starting at RESULT_FIRST_USER. RESULT_CANCELED is sent if
+            // this Activity crashes
+            setResult(RESULT_OK, goingBack);
+
+            // Close this Activity
+            finish();
         }
-        // Define our intention to go back to ActivityMain
-        Intent goingBack = new Intent();
-
-        // Define the String name and the value to assign to it
-        goingBack.putExtra("Activity Name", "FindOriginDestination");
-        goingBack.putExtra("Starting point", sourceName);
-        goingBack.putExtra("Destination", destinationName);
-
-        // Sends data back to the parent and can use RESULT_CANCELED, RESULT_OK, or any
-        // custom values starting at RESULT_FIRST_USER. RESULT_CANCELED is sent if
-        // this Activity crashes
-        setResult(RESULT_OK, goingBack);
-
-        // Close this Activity
-        finish();
     }
 
     @Override
@@ -108,10 +122,20 @@ public class FindOriginDestinationActivity extends Activity implements AdapterVi
             autoCompleteSource.setText("");
         }
         */
+        getDirectionsButton.setEnabled(false);
         InputMethodManager in = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         if (in != null) {
             in.hideSoftInputFromWindow(view.getApplicationWindowToken(), 0);
         }
+        AutoCompleteTextView destination = findViewById(R.id.destination);
+        AutoCompleteTextView source = findViewById(R.id.starting_point);
+
+        String destinationName = String.valueOf(destination.getText());
+        String sourceName = String.valueOf(source.getText());
+        if (sourceName != null && destinationName != null && !sourceName.equals("") && !destinationName.equals("")) {
+            getDirectionsButton.setEnabled(true);
+        }
+
     }
 
     private void resetView() {
@@ -150,6 +174,7 @@ public class FindOriginDestinationActivity extends Activity implements AdapterVi
 
     @Override
     public boolean onTouch(View view, MotionEvent event) {
+        getDirectionsButton.setEnabled(false);
         if (view.getId() == R.id.starting_point) {
             autoCompleteSource.setText("");
         } else if (view.getId() == R.id.destination) {

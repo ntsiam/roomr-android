@@ -9,6 +9,8 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:descendantFocusability="beforeDescendants"
+        android:focusableInTouchMode="true"
         android:layout_centerInParent="true">
 
         <!--<TextView-->
@@ -76,12 +78,13 @@
             android:singleLine="true" />
 
         <Button
-            android:id="@+id/button3"
+            android:id="@+id/directionsButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentTop="true"
             android:layout_centerHorizontal="true"
             android:layout_marginTop="118dp"
+            android:enabled="true"
             android:onClick="onSendUsersName"
             android:text="Get Directions" />
 
