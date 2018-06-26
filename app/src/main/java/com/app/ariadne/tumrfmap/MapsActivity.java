@@ -94,6 +94,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     MapClickListener mapClickListener;
     ItemClickListener itemClickListener;
     GeoJsonMap geoJsonMap;
+    String previousDestination;
 
     public static final int MY_PERMISSIONS_REQUEST_FINE_LOCATION = 1;
 
@@ -261,8 +262,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         // To send data use putExtra with a String name followed by its value
         getNameScreenIntent.putExtra("callingActivity", "MapsActivity");
+        previousDestination = "";
 
         if (mapUIElementsManager.target != null) {
+            previousDestination = mapUIElementsManager.target.getId();
             getNameScreenIntent.putExtra("destination", mapUIElementsManager.target.getId());
         }
         if (mapUIElementsManager.source != null) {
@@ -297,6 +300,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void handleRouteRequest(final String source, final String targetName) {
+        long unixTime = System.currentTimeMillis();
+        Log.i("getPath", "HandleRouteRequest, start: " + unixTime);
+
         if (!source.equals("My Location") && !source.equals(targetName) && !(source.equals("Entrance of building")
                 && targetName.equals("entrance")) && !(targetName.equals("Entrance of building")
                 && source.equals("entrance"))) {
@@ -321,10 +327,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //                mapUIElementsManager.target = findDestinationFromId(targetName);
                 if (mapUIElementsManager.target != null) {
                     Log.i(TAG, "Destination found! : " + mapUIElementsManager.target.getId());
-                    dijkstra.startDijkstra(mapUIElementsManager.source);
+                    unixTime = System.currentTimeMillis();
+                    Log.i("getPath", "HandleRouteRequest, calling startDijkstra: " + unixTime);
+//                    dijkstra.startDijkstra(mapUIElementsManager.source);
+                    unixTime = System.currentTimeMillis();
+                    Log.i("getPath", "HandleRouteRequest, after startDijkstra: " + unixTime);
                     mapUIElementsManager.routePolylineOptionsInLevels = null;
 //                    routePolylineOptionsGray = new PolylineOptions().width(15).color(Color.GRAY).zIndex(Integer.MAX_VALUE - 20);
-                    mapUIElementsManager.routePolylineOptionsInLevels = dijkstra.getPath(mapUIElementsManager.target);
+                    unixTime = System.currentTimeMillis();
+                    Log.i("getPath", "HandleRouteRequest, calling getPath: " + unixTime);
+
+                    mapUIElementsManager.routePolylineOptionsInLevels = dijkstra.getPath(mapUIElementsManager.source);
+                    unixTime = System.currentTimeMillis();
+                    Log.i("getPath", "HandleRouteRequest, after getPath: " + unixTime);
+
                     LatLng minPoint = new LatLng(dijkstra.minRouteLat, dijkstra.minRouteLng);
                     LatLng maxPoint = new LatLng(dijkstra.maxRouteLat, dijkstra.maxRouteLng);
                     mapUIElementsManager.handleRoutePolyline(routeHandler, mapUIElementsManager.target, minPoint, maxPoint);
@@ -370,6 +386,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 if (destination != null) {
                     Log.i(TAG, "Destination: " + destination);
                     mapUIElementsManager.setDestinationOnMap(destination);
+                    Log.i(TAG, "Previous destination: " + previousDestination +
+                            ", current destination: " + mapUIElementsManager.target.getId());
+                    if (!previousDestination.equals(mapUIElementsManager.target.getId())) {
+                        previousDestination = mapUIElementsManager.target.getId();
+                        AsyncTask.execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                dijkstra.startDijkstra(mapUIElementsManager.target);
+                            }
+                        });
+                    }
                 }
             } else {
                 mapUIElementsManager.sourceName = data.getStringExtra("Starting point");
@@ -386,9 +413,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     }
                     ProgressBar progressBar = findViewById(R.id.progressBar2);
                     progressBar.setVisibility(ProgressBar.VISIBLE);
+
                     AsyncTask.execute(new Runnable() {
                         @Override
                         public void run() {
+                            long unixTime = System.currentTimeMillis();
+                            Log.i(TAG, "2. Previous destination: " + previousDestination +
+                                    ", current destination: " + mapUIElementsManager.target.getId());
+                            if (!previousDestination.equals(mapUIElementsManager.targetName)) {
+                                previousDestination = mapUIElementsManager.targetName;
+                                dijkstra.startDijkstra(findDestinationFromId(mapUIElementsManager.targetName));
+                            }
+                            Log.i("getPath", "HandleRouteRequest, onActivityResult: " + unixTime);
                             handleRouteRequest(mapUIElementsManager.sourceName, mapUIElementsManager.targetName);
                             //TODO your background code
                         }

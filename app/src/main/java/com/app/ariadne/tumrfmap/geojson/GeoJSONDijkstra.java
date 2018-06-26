@@ -100,7 +100,7 @@ public class GeoJSONDijkstra {
         int index = findVertexIndex(source);
         if (index >= 0) {
             dijkstraAlgorithm.execute(vertices.get(index));
-            ArrayList<Vertex> nodesWithoutpredecessors = dijkstraAlgorithm.getNodesWithoutPredecessors();
+//            ArrayList<Vertex> nodesWithoutpredecessors = dijkstraAlgorithm.getNodesWithoutPredecessors();
 //            System.out.println("Start dijkstra from: " + vertices.get(index).getId());
         } else {
             System.out.println("Dijkstra starting point not found!!!!!!");
@@ -141,6 +141,8 @@ public class GeoJSONDijkstra {
     }
 
     public ArrayList<PolylineOptions> getPath(LatLngWithTags destination) {
+        long unixTime = System.currentTimeMillis();
+        Log.i("getPath", "HandleRouteRequest, getPath, Start: " + unixTime);
         initRouteMinMax();
         LinkedList<Vertex> path;
         LineString pathLineString;
@@ -148,54 +150,57 @@ public class GeoJSONDijkstra {
         PolylineOptions polylineOptions = new PolylineOptions().width(18).color(Color.RED).zIndex(Integer.MAX_VALUE - 1000);
         ArrayList<LatLng> pathArrayList = new ArrayList<>();
 //        System.out.println("Target: " + vertices.get(index).toString());
-            path = getGraphPath(destination);
-            path = removePathDuplicates(path);
-            Log.i("GEOJSONDIJKSTRA", "Path found");
-            if (path != null) {
-                int prevLevel = Integer.MIN_VALUE;
-                LatLng prevPoint = null;
-                for (Vertex point : path) {
-                    int level = Integer.valueOf(point.getLevel());
-                    LatLng nextPoint;
+        path = getGraphPath(destination);
+        path = removePathDuplicates(path);
+        Log.i("GEOJSONDIJKSTRA", "Path found");
+        if (path != null) {
+            int prevLevel = Integer.MIN_VALUE;
+            LatLng prevPoint = null;
+            for (Vertex point : path) {
+                int level = Integer.valueOf(point.getLevel());
+                LatLng nextPoint;
 //                System.out.println("Point: " + point.getId());
-                    nextPoint = stringToLatLng(point.getId());
-                    if (nextPoint.latitude > maxRouteLat) {
-                        maxRouteLat = nextPoint.latitude;
-                    }
-                    if (nextPoint.longitude > maxRouteLng) {
-                        maxRouteLng = nextPoint.longitude;
-                    }
-                    if (nextPoint.latitude < minRouteLat) {
-                        minRouteLat = nextPoint.latitude;
-                    }
-                    if (nextPoint.longitude < minRouteLng) {
-                        minRouteLng = nextPoint.longitude;
-                    }
-                    if (prevLevel == level) {
-                        System.out.println("Next point level: " + level);
-
-                        pathArrayList.add(nextPoint);
-                        polylineOptions.add(nextPoint);
-                    } else {
-                        if (prevLevel != Integer.MIN_VALUE) {
-//                            polylineOptions.add(nextPoint);
-                            polylineOptionsInLevels.add(polylineOptions);
-                        }
-                        polylineOptions = new PolylineOptions().width(20).color(Color.RED).zIndex(Integer.MAX_VALUE - 1000);
-                        if (prevPoint != null) {
-                            pathArrayList.add(prevPoint);
-                            polylineOptions.add(prevPoint);
-                        }
-                        pathArrayList.add(nextPoint);
-                        polylineOptions.add(nextPoint);
-                        prevLevel = level;
-                    }
-                    prevPoint = nextPoint;
+                nextPoint = stringToLatLng(point.getId());
+                if (nextPoint.latitude > maxRouteLat) {
+                    maxRouteLat = nextPoint.latitude;
                 }
-                polylineOptionsInLevels.add(polylineOptions);
-            } else {
-                System.out.println("Path not found!");
+                if (nextPoint.longitude > maxRouteLng) {
+                    maxRouteLng = nextPoint.longitude;
+                }
+                if (nextPoint.latitude < minRouteLat) {
+                    minRouteLat = nextPoint.latitude;
+                }
+                if (nextPoint.longitude < minRouteLng) {
+                    minRouteLng = nextPoint.longitude;
+                }
+                if (prevLevel == level) {
+                    System.out.println("Next point level: " + level);
+
+                    pathArrayList.add(nextPoint);
+                    polylineOptions.add(nextPoint);
+                } else {
+                    if (prevLevel != Integer.MIN_VALUE) {
+//                            polylineOptions.add(nextPoint);
+                        polylineOptionsInLevels.add(polylineOptions);
+                    }
+                    polylineOptions = new PolylineOptions().width(20).color(Color.RED).zIndex(Integer.MAX_VALUE - 1000);
+                    if (prevPoint != null) {
+                        pathArrayList.add(prevPoint);
+                        polylineOptions.add(prevPoint);
+                    }
+                    pathArrayList.add(nextPoint);
+                    polylineOptions.add(nextPoint);
+                    prevLevel = level;
+                }
+                prevPoint = nextPoint;
             }
+            polylineOptionsInLevels.add(polylineOptions);
+        } else {
+            System.out.println("Path not found!");
+        }
+        unixTime = System.currentTimeMillis();
+        Log.i("getPath", "HandleRouteRequest, getPath, End: " + unixTime);
+
         return polylineOptionsInLevels;
     }
 
