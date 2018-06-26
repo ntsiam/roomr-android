@@ -174,7 +174,7 @@ public class MapUIElementsManager {
     }
 
     private void addPathToPolylineOptionsGray(int index, int currentIndex, PolylineOptions polylineOptions) {
-        routePolylineOptionsGray = new PolylineOptions().width(20).color(Color.GRAY).zIndex(Integer.MAX_VALUE - 20);
+        routePolylineOptionsGray = new PolylineOptions().width(18).color(Color.GRAY).zIndex(Integer.MAX_VALUE - 2000);
         if (currentIndex != index) {
             addPointsToPolyLineOptionsGray(polylineOptions);
         }

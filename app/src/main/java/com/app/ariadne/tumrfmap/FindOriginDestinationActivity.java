@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -13,7 +14,7 @@ import com.app.ariadne.tumrfmap.geojson.GeoJsonMap;
 
 import java.util.ArrayList;
 
-public class FindOriginDestinationActivity extends Activity implements AdapterView.OnItemClickListener, View.OnClickListener {
+public class FindOriginDestinationActivity extends Activity implements AdapterView.OnItemClickListener, View.OnClickListener, View.OnTouchListener {
     String givenDestinationName;
     private static final String TAG = "SecondActivity";
     AutoCompleteTextView autoCompleteSource;
@@ -56,7 +57,10 @@ public class FindOriginDestinationActivity extends Activity implements AdapterVi
         autoCompleteSource.setAdapter(sourceAdapter);
         autoCompleteSource.setOnItemClickListener(this);
         autoCompleteSource.setOnClickListener(this);
+        autoCompleteSource.setOnTouchListener(this);
         autoCompleteDestination.setOnItemClickListener(this);
+        autoCompleteDestination.setOnClickListener(this);
+        autoCompleteDestination.setOnTouchListener(this);
 
 
 //        TextView callingActivityMessage = (TextView)
@@ -126,9 +130,25 @@ public class FindOriginDestinationActivity extends Activity implements AdapterVi
 
     @Override
     public void onClick(View view) {
+        Log.i(TAG, "Clicked on view: " + view.getId());
         if (view.getId() == R.id.starting_point) {
             autoCompleteSource.setText("");
+        } else if (view.getId() == R.id.destination) {
+            Log.i(TAG, "Destination view: " + view.getId());
+            autoCompleteDestination.setText("");
         }
 
+    }
+
+    @Override
+    public boolean onTouch(View view, MotionEvent event) {
+        if (view.getId() == R.id.starting_point) {
+            autoCompleteSource.setText("");
+        } else if (view.getId() == R.id.destination) {
+            Log.i(TAG, "Destination view: " + view.getId());
+            autoCompleteDestination.setText("");
+        }
+
+        return false;
     }
 }

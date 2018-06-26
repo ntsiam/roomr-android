@@ -145,7 +145,7 @@ public class GeoJSONDijkstra {
         LinkedList<Vertex> path;
         LineString pathLineString;
         ArrayList<PolylineOptions> polylineOptionsInLevels = new ArrayList<>();
-        PolylineOptions polylineOptions = new PolylineOptions().width(20).color(Color.RED).zIndex(Integer.MAX_VALUE - 1000);
+        PolylineOptions polylineOptions = new PolylineOptions().width(18).color(Color.RED).zIndex(Integer.MAX_VALUE - 1000);
         ArrayList<LatLng> pathArrayList = new ArrayList<>();
 //        System.out.println("Target: " + vertices.get(index).toString());
             path = getGraphPath(destination);
