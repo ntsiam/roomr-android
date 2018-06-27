@@ -1,11 +1,12 @@
 package com.app.ariadne.tumrfmap.dijkstra;
 
+import android.util.Log;
+
 import com.app.ariadne.tumrfmap.dijkstra.model.Edge;
 import com.app.ariadne.tumrfmap.dijkstra.model.Graph;
 import com.app.ariadne.tumrfmap.dijkstra.model.Vertex;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -21,14 +22,19 @@ public class DijkstraAlgorithm {
     private Set<Vertex> unSettledNodes;
     private Map<Vertex, Vertex> predecessors;
     private Map<Vertex, Integer> distance;
+    public HashMap<String, Edge> edgeHashMap;
 
-    public DijkstraAlgorithm(Graph graph) {
+    public DijkstraAlgorithm(Graph graph, HashMap edgeHashMap) {
         // create a copy of the array so that we can operate on this array
         this.nodes = new ArrayList<Vertex>(graph.getVertexes());
         this.edges = new ArrayList<Edge>(graph.getEdges());
+        this.edgeHashMap = edgeHashMap;
     }
 
     public void execute(Vertex source) {
+        long unixTime = System.currentTimeMillis();
+        Log.i("Execute", "Execute 1 before: " + unixTime);
+
         settledNodes = new HashSet<Vertex>();
         unSettledNodes = new HashSet<Vertex>();
         distance = new HashMap<Vertex, Integer>();
@@ -41,6 +47,8 @@ public class DijkstraAlgorithm {
             unSettledNodes.remove(node);
             findMinimalDistances(node);
         }
+        unixTime = System.currentTimeMillis();
+        Log.i("Execute", "Execute 1 after: " + unixTime);
     }
 
     public ArrayList<Vertex> getNodesWithoutPredecessors() {
@@ -68,14 +76,18 @@ public class DijkstraAlgorithm {
 
     }
 
+    // This can be improved
     private int getDistance(Vertex node, Vertex target) {
-        for (Edge edge : edges) {
-            if (edge.getSource().equals(node)
-                    && edge.getDestination().equals(target)) {
-                return edge.getWeight();
-            }
-        }
-        throw new RuntimeException("Should not happen");
+        Edge edge = edgeHashMap.get(node.getId() + target.getId());
+        return edge.getWeight();
+
+//        for (Edge edge : edges) {
+//            if (edge.getSource().equals(node)
+//                    && edge.getDestination().equals(target)) {
+//                return edge.getWeight();
+//            }
+//        }
+//        throw new RuntimeException("Should not happen");
     }
 
     private List<Vertex> getNeighbors(Vertex node) {

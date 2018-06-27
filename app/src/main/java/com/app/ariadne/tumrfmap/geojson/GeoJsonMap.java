@@ -29,7 +29,6 @@ public class GeoJsonMap {
     ArrayList<GeoJsonLayer> indoorTopologyLayer;
     private GoogleMap mMap;
     private ArrayList<Circle> particleMarkers;
-    public static LatLng weightedAverage;
     private final String TAG = "GeoJsonMap";
 
     //Indoor Layout variables
@@ -38,7 +37,7 @@ public class GeoJsonMap {
     ArrayList<ArrayList<LatLng>> corridors;
     public static ArrayList<ArrayList<LatLngWithTags>> routablePath;
     ArrayList<ArrayList<LatLng>> steps;
-    public static ArrayList<LatLng> targetPoints;
+//    public static ArrayList<LatLng> targetPoints;
     public static ArrayList<LatLngWithTags> targetPointsTagged;
     public static ArrayList<String> targetPointsIds;
     public static ArrayList<String> sourcePointsIds;
@@ -49,8 +48,14 @@ public class GeoJsonMap {
     public static LatLngWithTags startingPoint;
     public ArrayList<String> mapLevels = new ArrayList<>();
     public ArrayList<ArrayList<GeoJsonFeature>> mapInLevels = new ArrayList<>();
-    public static final int[] mapSources = {R.raw.routing_all};
+    public static final int[] mapSources = {R.raw.routing_all, R.raw.path_all_mw};
     HashMap<String, Entrance> entranceHashMap;
+    public static ArrayList<ArrayList<LatLngWithTags>> targetPointsTaggedForEachBuilding;
+    public static ArrayList<ArrayList<String>> targetPointsIdsForEachBuilding;
+    public static ArrayList<ArrayList<String>> sourcePointsIdsForEachBuilding;
+    public static ArrayList<ArrayList<ArrayList<LatLngWithTags>>> routablePathForEachBuilding;
+    public static HashMap<String, Integer> buildingIndexes;
+
 
 
 
@@ -213,7 +218,8 @@ public class GeoJsonMap {
             return;
         }
         for (GeoJsonLayer indoorLayer: indoorTopologyLayer) {
-            processIndoorPathFeatures(indoorLayer);
+//            processIndoorPathFeatures(indoorLayer);
+            addNewBuildingTopology(indoorLayer);
         }
 
         interpolatedCorridors = GeoJsonHelper.interpolateLinesLatLng(corridors);
@@ -228,15 +234,34 @@ public class GeoJsonMap {
         }
     }
 
+    private void addNewBuildingTopology(GeoJsonLayer buildingLayer) {
+        processIndoorPathFeatures(buildingLayer);
+        targetPointsTaggedForEachBuilding.add(targetPointsTagged);
+        targetPointsIdsForEachBuilding.add(targetPointsIds);
+        sourcePointsIdsForEachBuilding.add(sourcePointsIds);
+        routablePathForEachBuilding.add(routablePath);
+        resetTempVariables();
+    }
+
     private void resetGlobalPathVariables() {
-        targetPoints = new ArrayList<>();
-        targetPointsTagged = new ArrayList<>();
-        targetPointsIds = new ArrayList<>();
-        sourcePointsIds = new ArrayList<>();
+        resetTempVariables();
+//        targetPoints = new ArrayList<>();
         corridorsInLevels = new ArrayList<>();
         corridors = new ArrayList<>();
         steps = new ArrayList<>();
         stepsInLevels = new ArrayList<>();
+        targetPointsTagged = new ArrayList<>();
+        targetPointsIds = new ArrayList<>();
+        sourcePointsIds = new ArrayList<>();
+
+        targetPointsTaggedForEachBuilding = new ArrayList<>();
+        targetPointsIdsForEachBuilding = new ArrayList<>();
+        sourcePointsIdsForEachBuilding = new ArrayList<>();
+        routablePathForEachBuilding = new ArrayList<>();
+        buildingIndexes = new HashMap<>();
+    }
+
+    private void resetTempVariables() {
         routablePath = new ArrayList<>();
     }
 
@@ -287,7 +312,7 @@ public class GeoJsonMap {
 
     private void handleTargetPoint(GeoJsonFeature feature) {
         LatLng latLng = ((LatLng) feature.getGeometry().getGeometryObject());
-        targetPoints.add(latLng);
+//        targetPoints.add(latLng);
         ArrayList<Integer> levels = new ArrayList<>();
         int level = 0;
         String id = "";
@@ -311,6 +336,9 @@ public class GeoJsonMap {
             if (property.contains("building_id=")) {
                 Log.i(TAG, "building_id: " + GeoJsonHelper.getValueOfProperty(property));
                 buildingId = GeoJsonHelper.getValueOfProperty(property);
+                if (!buildingIndexes.containsKey(buildingId)) {
+                    buildingIndexes.put(buildingId, routablePathForEachBuilding.size());
+                }
 
             } else if (property.contains("id=")) {
                 id = GeoJsonHelper.getValueOfProperty(property);

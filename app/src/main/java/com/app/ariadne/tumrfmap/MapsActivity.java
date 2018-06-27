@@ -75,8 +75,11 @@ import java.util.ArrayList;
 import java.util.StringTokenizer;
 
 import static com.app.ariadne.tumrfmap.geojson.GeoJsonHelper.ListToArrayList;
+import static com.app.ariadne.tumrfmap.geojson.GeoJsonMap.buildingIndexes;
 import static com.app.ariadne.tumrfmap.geojson.GeoJsonMap.findDestinationFromId;
+import static com.app.ariadne.tumrfmap.geojson.GeoJsonMap.mapSources;
 import static com.app.ariadne.tumrfmap.geojson.GeoJsonMap.routablePath;
+import static com.app.ariadne.tumrfmap.geojson.GeoJsonMap.routablePathForEachBuilding;
 import static com.app.ariadne.tumrfmap.map.MapUIElementsManager.MAX_FLOOR;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
@@ -87,7 +90,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public static boolean isFirstTime = true;
     TileOverlay tileOverlay;
     MultiAutoCompleteTextView autoCompleteDestination;
-    GeoJSONDijkstra dijkstra;
+    ArrayList<GeoJSONDijkstra> dijkstra;
     Handler routeHandler = new Handler();
     MapUIElementsManager mapUIElementsManager;
     ButtonClickListener buttonClickListener;
@@ -95,6 +98,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     ItemClickListener itemClickListener;
     GeoJsonMap geoJsonMap;
     String previousDestination;
+    int sourceBuildingIndex;
+    int targetBuildingIndex;
 
     public static final int MY_PERMISSIONS_REQUEST_FINE_LOCATION = 1;
 
@@ -201,7 +206,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         geoJsonMap = new GeoJsonMap(mMap);
         geoJsonMap.loadIndoorTopology(this);
-        dijkstra = new GeoJSONDijkstra(routablePath);
+        dijkstra = new ArrayList<>();
+        for (int i = 0; i < routablePathForEachBuilding.size(); i++) {
+            dijkstra.add(new GeoJSONDijkstra(routablePathForEachBuilding.get(i)));
+        }
         ArrayList<String> targetPointsIds = geoJsonMap.targetPointsIds;
         targetPointsIds.remove("Entrance of building");
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
@@ -288,11 +296,37 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         return index == 3;
     }
 
+    public static boolean isInteger(String s) {
+        try {
+            Integer.parseInt(s);
+        } catch(NumberFormatException e) {
+            return false;
+        } catch(NullPointerException e) {
+            return false;
+        }
+        // only got here if we didn't return false
+        return true;
+    }
+
+    private static boolean isMWId(String id) {
+        StringTokenizer multiTokenizer = new StringTokenizer(id, ".");
+        int index = 0;
+        while (multiTokenizer.hasMoreTokens()) {
+            multiTokenizer.nextToken();
+
+            index++;
+            Log.i(TAG, "MORE tokens");
+        }
+        return index == 1 && isInteger(id);
+    }
+
     public static int findLevelFromId(String id) {
         int level = 0;
         if (isGarchingMIId(id)) {
             level = Integer.valueOf(id.substring(1,2));
             Log.i(TAG, "id: " + id + " is from Garching MI, level: " + level);
+        } else if (isMWId(id)) {
+            level = Integer.valueOf(id.substring(0,1));
         } else {
             Log.i(TAG, "id: " + id + " is not from Garching MI");
         }
@@ -306,7 +340,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (!source.equals("My Location") && !source.equals(targetName) && !(source.equals("Entrance of building")
                 && targetName.equals("entrance")) && !(targetName.equals("Entrance of building")
                 && source.equals("entrance"))) {
-            Log.i(TAG, "Source:  " + source);
+            Log.i(TAG, "Source: " + source);
             if (source.equals("Entrance of building")){
 //                mapUIElementsManager.target = findDestinationFromId(targetName);
                 mapUIElementsManager.source = geoJsonMap.findEntranceForDestination(mapUIElementsManager.target).getEntranceLatLngWithTags();
@@ -337,12 +371,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     unixTime = System.currentTimeMillis();
                     Log.i("getPath", "HandleRouteRequest, calling getPath: " + unixTime);
 
-                    mapUIElementsManager.routePolylineOptionsInLevels = dijkstra.getPath(mapUIElementsManager.source);
+                    mapUIElementsManager.routePolylineOptionsInLevels = dijkstra.get(targetBuildingIndex).getPath(mapUIElementsManager.source);
                     unixTime = System.currentTimeMillis();
                     Log.i("getPath", "HandleRouteRequest, after getPath: " + unixTime);
 
-                    LatLng minPoint = new LatLng(dijkstra.minRouteLat, dijkstra.minRouteLng);
-                    LatLng maxPoint = new LatLng(dijkstra.maxRouteLat, dijkstra.maxRouteLng);
+                    LatLng minPoint = new LatLng(dijkstra.get(targetBuildingIndex).minRouteLat, dijkstra.get(targetBuildingIndex).minRouteLng);
+                    LatLng maxPoint = new LatLng(dijkstra.get(targetBuildingIndex).maxRouteLat, dijkstra.get(targetBuildingIndex).maxRouteLng);
                     mapUIElementsManager.handleRoutePolyline(routeHandler, mapUIElementsManager.target, minPoint, maxPoint);
                 } else {
                     routeHandler.post(new Runnable() {
@@ -393,7 +427,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         AsyncTask.execute(new Runnable() {
                             @Override
                             public void run() {
-                                dijkstra.startDijkstra(mapUIElementsManager.target);
+                                targetBuildingIndex = buildingIndexes.get(mapUIElementsManager.target.getBuildingId());
+                                dijkstra.get(targetBuildingIndex).startDijkstra(mapUIElementsManager.target);
                             }
                         });
                     }
@@ -422,7 +457,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                     ", current destination: " + mapUIElementsManager.target.getId());
                             if (!previousDestination.equals(mapUIElementsManager.targetName)) {
                                 previousDestination = mapUIElementsManager.targetName;
-                                dijkstra.startDijkstra(findDestinationFromId(mapUIElementsManager.targetName));
+                                targetBuildingIndex = buildingIndexes.get(mapUIElementsManager.target.getBuildingId());
+                                dijkstra.get(targetBuildingIndex).startDijkstra(findDestinationFromId(mapUIElementsManager.targetName));
                             }
                             Log.i("getPath", "HandleRouteRequest, onActivityResult: " + unixTime);
                             handleRouteRequest(mapUIElementsManager.sourceName, mapUIElementsManager.targetName);

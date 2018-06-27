@@ -23,11 +23,14 @@ public class GeoJSONDijkstra {
     private DijkstraAlgorithm dijkstraAlgorithm;
     private ArrayList<Vertex> vertices;
     private ArrayList<Edge> edges;
+    private ArrayList<ArrayList<Vertex>> verticesForEachBuilding;
+    private ArrayList<ArrayList<Edge>> edgesForEachBuilding;
     public String level;
     public double maxRouteLat;
     public double maxRouteLng;
     public double minRouteLat;
     public double minRouteLng;
+    private HashMap<String, Edge> edgeHashMap;
 
 
     public GeoJSONDijkstra(ArrayList<ArrayList<LatLngWithTags>> paths) {
@@ -51,7 +54,10 @@ public class GeoJSONDijkstra {
     private void addNewEdge(ArrayList<Edge> edges, Vertex source, Vertex destination, double distance, int level) {
         int weight = (int) Math.round(distance);
         String id = source.getId() + "," + destination.getId() + String.valueOf(level);
-        edges.add(new Edge(id, source, destination, weight, level));
+        Edge edge = new Edge(id, source, destination, weight, level);
+        edges.add(edge);
+        edgeHashMap.put(source.getId() + destination.getId(), edge);
+        edgeHashMap.put(destination.getId() + source.getId(), edge);
 
 //        System.out.println("Adding edge: source: " + source.toString() + ", destination: " + destination.toString());
     }
@@ -59,6 +65,7 @@ public class GeoJSONDijkstra {
     private void fromGeoJSONToGraph(ArrayList<ArrayList<LatLngWithTags>> routablePaths) {
         vertices = new ArrayList<>();
         edges = new ArrayList<>();
+        edgeHashMap = new HashMap<>();
         Graph routableGraph;
         Set<String> s = new HashSet<String>(64);
         for (ArrayList<LatLngWithTags> line : routablePaths) {
@@ -78,7 +85,7 @@ public class GeoJSONDijkstra {
 //            System.out.println("Vertex: " + vertex.getId());
 //        }
         routableGraph = new Graph(vertices, edges);
-        dijkstraAlgorithm = new DijkstraAlgorithm(routableGraph);
+        dijkstraAlgorithm = new DijkstraAlgorithm(routableGraph, edgeHashMap);
     }
 
     private int findVertexIndex(LatLngWithTags source) {
