@@ -258,6 +258,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     public void onFindDestinationClick(View view) {
+        cancelTarget(view);
         startActivityForResults(FindDestinationActivity.class);
     }
 
