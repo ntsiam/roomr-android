@@ -96,13 +96,13 @@ public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCa
                 if (!levelButton.isChecked()) {
                     Log.i(TAG, "Entered here");
                     level = ""; //no tiles for ""
-                    if (mapUIElementsManager.routePolylineOptionsInLevels != null) {
+                    if (mapUIElementsManager.route != null) {
                         mapUIElementsManager.addRouteLineFromPolyLineOptions(Integer.MIN_VALUE);
                     }
                 } else {
-                    if (mapUIElementsManager.routePolylineOptionsInLevels != null) {
-                        int polyLineIndex = mapUIElementsManager.findPolyLineIndex(requestedLevel);
-                        mapUIElementsManager.addRouteLineFromPolyLineOptions(polyLineIndex);
+                    if (mapUIElementsManager.route != null) {
+//                        int polyLineIndex = mapUIElementsManager.findPolyLineIndex(requestedLevel);
+                        mapUIElementsManager.addRouteLineFromPolyLineOptions(requestedLevel);
                     }
                 }
             }

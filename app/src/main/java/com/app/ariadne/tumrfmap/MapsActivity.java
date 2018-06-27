@@ -372,9 +372,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     unixTime = System.currentTimeMillis();
                     Log.i("getPath", "HandleRouteRequest, calling getPath: " + unixTime);
 
-                    mapUIElementsManager.routePolylineOptionsInLevels = dijkstra.get(targetBuildingIndex).getPath(mapUIElementsManager.source);
+                    mapUIElementsManager.route = dijkstra.get(targetBuildingIndex).getPath(mapUIElementsManager.source);
                     unixTime = System.currentTimeMillis();
-                    Log.i("getPath", "HandleRouteRequest, after getPath: " + unixTime);
+//                    Log.i("getPath", "route: Max Level: " + mapUIElementsManager.route.getMaxRouteLevel() +
+//                    ", Min Level: " + mapUIElementsManager.route.getMinRouteLevel() + ", number of paths for source: " +
+//                    mapUIElementsManager.route.getRouteHashMapForLevels().get(mapUIElementsManager.route.getSourceLevel()).size());
 
                     LatLng minPoint = new LatLng(dijkstra.get(targetBuildingIndex).minRouteLat, dijkstra.get(targetBuildingIndex).minRouteLng);
                     LatLng maxPoint = new LatLng(dijkstra.get(targetBuildingIndex).maxRouteLat, dijkstra.get(targetBuildingIndex).maxRouteLng);

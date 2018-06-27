@@ -11,6 +11,8 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.maps.android.SphericalUtil;
 
+import java.util.ArrayList;
+
 public class MapClickListener implements GoogleMap.OnMapClickListener {
     private Context context;
     private ButtonClickListener buttonClickListener;
@@ -31,12 +33,15 @@ public class MapClickListener implements GoogleMap.OnMapClickListener {
             int levelToShow = Integer.valueOf(mapUIElementsManager.level);
             if (mapUIElementsManager.routePolylineOptionsInLevels != null) {
                 int currLevel = 0;
-                for (PolylineOptions routeLevel : mapUIElementsManager.routePolylineOptionsInLevels) {
-                    for (LatLng point : routeLevel.getPoints()) {
-                        double tmpDistance = SphericalUtil.computeDistanceBetween(point, latLng);
-                        if (tmpDistance < minDistance) {
-                            minDistance = tmpDistance;
-                            levelToShow = currLevel;
+                for (int i = 0; i < mapUIElementsManager.route.getMaxRouteLevel(); i++) {
+                    ArrayList<PolylineOptions> routeLevelContainer = mapUIElementsManager.route.getRouteHashMapForLevels().get(i);
+                    for (PolylineOptions routeLevel : routeLevelContainer) {
+                        for (LatLng point : routeLevel.getPoints()) {
+                            double tmpDistance = SphericalUtil.computeDistanceBetween(point, latLng);
+                            if (tmpDistance < minDistance) {
+                                minDistance = tmpDistance;
+                                levelToShow = currLevel;
+                            }
                         }
                     }
                     currLevel++;

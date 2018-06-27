@@ -20,6 +20,7 @@ import com.app.ariadne.tumrfmap.geojson.Entrance;
 import com.app.ariadne.tumrfmap.geojson.GeoJsonMap;
 import com.app.ariadne.tumrfmap.geojson.LatLngWithTags;
 import com.app.ariadne.tumrfmap.listeners.ButtonClickListener;
+import com.app.ariadne.tumrfmap.models.Route;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.Projection;
@@ -35,13 +36,15 @@ import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import static com.app.ariadne.tumrfmap.MapsActivity.findLevelFromId;
 import static com.app.ariadne.tumrfmap.geojson.GeoJsonHelper.ListToArrayList;
 import static com.app.ariadne.tumrfmap.geojson.GeoJsonMap.findDestinationFromId;
 
 public class MapUIElementsManager {
-    public ArrayList<PolylineOptions> routePolylineOptionsInLevels;
+    public HashMap<Integer, ArrayList<PolylineOptions>> routePolylineOptionsInLevels;
+    public Route route;
     public PolylineOptions routePolylineOptions;
     public PolylineOptions routePolylineOptionsGray;
     Context context;
@@ -158,15 +161,23 @@ public class MapUIElementsManager {
 
 
 
-    public void addRouteLineFromPolyLineOptions(int index) {
+    public void addRouteLineFromPolyLineOptions(int level) {
         removeRouteLine();
         int currentIndex = 0;
-        for (PolylineOptions polylineOptions: routePolylineOptionsInLevels) {
-            addPathToPolylineOptionsGray(index, currentIndex, polylineOptions);
-            currentIndex++;
+        for (int i = route.getMinRouteLevel(); i <= route.getMaxRouteLevel(); i++) {
+            for (PolylineOptions polylineOptions : route.getRouteHashMapForLevels().get(i)) {
+                addPathToPolylineOptionsGray(level, i, polylineOptions);
+            }
+
         }
-        if (index != Integer.MIN_VALUE) {
-            addRouteLine(routePolylineOptionsInLevels.get(index));
+//        for (PolylineOptions polylineOptions: routePolylineOptionsInLevels) {
+//            addPathToPolylineOptionsGray(index, currentIndex, polylineOptions);
+//            currentIndex++;
+//        }
+        if (level != Integer.MIN_VALUE) {
+            for (PolylineOptions polylineOptions : route.getRouteHashMapForLevels().get(level)) {
+                addRouteLine(polylineOptions);
+            }
             routePolylineOptionsGray.clickable(true);
         }
         removeSourceCircle();
@@ -184,6 +195,7 @@ public class MapUIElementsManager {
 
     private void addPointsToPolyLineOptionsGray(PolylineOptions polylineOptions) {
         for (LatLng point: polylineOptions.getPoints()) {
+//            Log.i(TAG, "addPointsToPolyLineOptionsGray, point: " + point.toString());
             routePolylineOptionsGray.add(point);
         }
     }
@@ -309,8 +321,11 @@ public class MapUIElementsManager {
     }
 
     public void handleRoutePolyline(Handler routeHandler, final LatLngWithTags target, final LatLng minPoint, final LatLng maxPoint) {
-        if (routePolylineOptionsInLevels != null && routePolylineOptionsInLevels.size() > 0) {
-            routePolylineOptions = routePolylineOptionsInLevels.get(0);
+//        if (routePolylineOptionsInLevels != null && routePolylineOptionsInLevels.size() > 0) {
+        if (route != null && route.getRouteHashMapForLevels()!= null && route.getRouteHashMapForLevels().get(route.getSourceLevel())
+                != null && route.getRouteHashMapForLevels().get(route.getSourceLevel()).size() > 0) {
+            routePolylineOptions = route.getRouteHashMapForLevels().get(route.getSourceLevel()).get(0);
+
             routeHandler.post(new Runnable() {
                 public void run() {
                     //back on UI thread...
@@ -341,23 +356,23 @@ public class MapUIElementsManager {
     }
 
     private void addRouteMarkers() {
-        resetRouteMarkers();
-        for (int i = 1; i < routePolylineOptionsInLevels.size(); i++) {
-            Marker stair;
-            if (sourceLevel < destinationLevel) {
-                stair = mMap.addMarker(new MarkerOptions()
-                        .position(routePolylineOptionsInLevels.get(i - 1).getPoints().get(routePolylineOptionsInLevels.get(i - 1).getPoints().size() - 1))
-                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.stairs_up)).snippet("one level").title("Take the stairs up"));
-            } else {
-                stair = mMap.addMarker(new MarkerOptions()
-                        .position(routePolylineOptionsInLevels.get(i - 1).getPoints().get(routePolylineOptionsInLevels.get(i - 1).getPoints().size() - 1))
-                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.stairs_down)).snippet("one level").title("Take the stairs down"));
-            }
-            routeMarkers.add(stair);
-        }
-        if (routeMarkers.size() > 0) {
-            routeMarkers.get(0).showInfoWindow();
-        }
+//        resetRouteMarkers();
+//        for (int i = 1; i < routePolylineOptionsInLevels.size(); i++) {
+//            Marker stair;
+//            if (sourceLevel < destinationLevel) {
+//                stair = mMap.addMarker(new MarkerOptions()
+//                        .position(routePolylineOptionsInLevels.get(i - 1).getPoints().get(routePolylineOptionsInLevels.get(i - 1).getPoints().size() - 1))
+//                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.stairs_up)).snippet("one level").title("Take the stairs up"));
+//            } else {
+//                stair = mMap.addMarker(new MarkerOptions()
+//                        .position(routePolylineOptionsInLevels.get(i - 1).getPoints().get(routePolylineOptionsInLevels.get(i - 1).getPoints().size() - 1))
+//                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.stairs_down)).snippet("one level").title("Take the stairs down"));
+//            }
+//            routeMarkers.add(stair);
+//        }
+//        if (routeMarkers.size() > 0) {
+//            routeMarkers.get(0).showInfoWindow();
+//        }
     }
 
     private void resetRouteMarkers() {
