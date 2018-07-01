@@ -25,20 +25,20 @@ public class EditTextWatcher implements TextWatcher {
 
     @Override
     public void afterTextChanged(Editable editable) {
-        Log.i("SECOND", "Text after change: " + editable.toString());
+//        Log.i("SECOND", "Text after change: " + editable.toString());
         adapterForDestination.clear();
         adapterForDestination.notifyDataSetChanged();
-        Log.i("SECOND", "Source point size original: " + GeoJsonMap.sourcePointsIds.size());
+//        Log.i("SECOND", "Source point size original: " + GeoJsonMap.sourcePointsIds.size());
 //            Log.i("SECOND", "Source point size: " + ids.size());
         for (String id: GeoJsonMap.sourcePointsIds) {
             if (id.contains(editable.toString())) {
-                Log.i("SECOND", "id: " + id);
+//                Log.i("SECOND", "id: " + id);
                 adapterForDestination.add(id);
-            } else {
-                Log.i("SECOND","id: " + id + ", does not contain string: " + editable.toString());
+//            } else {
+//                Log.i("SECOND","id: " + id + ", does not contain string: " + editable.toString());
             }
         }
-        Log.i("SECOND", "Adapter size: " + adapterForDestination.getCount());
+//        Log.i("SECOND", "Adapter size: " + adapterForDestination.getCount());
         adapterForDestination.notifyDataSetChanged();
     }
 }

@@ -34,7 +34,7 @@ public class ItemClickListener implements AdapterView.OnItemClickListener {
         buttonClickListener.showDestinationFoundButtons(destination.getId());
         mapUIElementsManager.addDestinationDescription(destination);
         int level = findLevelFromId(mapUIElementsManager.target.getId());
-        Log.i(TAG, "Set floor as checked: " + level);
+        //Log.i(TAG, "Set floor as checked: " + level);
         buttonClickListener.setFloorAsChecked(level);
 
     }

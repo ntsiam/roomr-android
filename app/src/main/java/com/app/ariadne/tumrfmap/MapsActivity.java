@@ -76,6 +76,7 @@ import java.util.StringTokenizer;
 
 import static com.app.ariadne.tumrfmap.geojson.GeoJsonHelper.ListToArrayList;
 import static com.app.ariadne.tumrfmap.geojson.GeoJsonMap.buildingIndexes;
+import static com.app.ariadne.tumrfmap.geojson.GeoJsonMap.buildingNameToId;
 import static com.app.ariadne.tumrfmap.geojson.GeoJsonMap.findDestinationFromId;
 import static com.app.ariadne.tumrfmap.geojson.GeoJsonMap.mapSources;
 import static com.app.ariadne.tumrfmap.geojson.GeoJsonMap.routablePath;
@@ -114,6 +115,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+//
+        geoJsonMap = new GeoJsonMap(mMap);
+        geoJsonMap.loadIndoorTopology(this);
+
 //        autoCompleteDestination = findViewById(R.id.multiAutoCompleteTextView);
 //        autoCompleteDestination.setTokenizer(new SpaceTokenizer());
 
@@ -121,7 +126,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     public void addTileProvider(final String level) {
         TileProvider tileProvider;
-        Log.i(TAG, "Add tiles, level: " + level);
+        //Log.i(TAG, "Add tiles, level: " + level);
         if (!level.equals("")) {
 //            CustomMapTileProvider customMapTileProvider = new CustomMapTileProvider(getResources().getAssets(), this);
             CustomMapTileProvider customMapTileProvider = new CustomMapTileProvider(this);
@@ -138,7 +143,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     .transparency(0.0f));
 
         } else {
-            Log.i(TAG, "Remove tiles");
+            //Log.i(TAG, "Remove tiles");
             if (tileOverlay != null) {
 //            tileOverlay.clearTileCache();
                 tileOverlay.remove();
@@ -150,7 +155,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this,
                 android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            System.out.println("No permission to access location!");
+//            Log.i(TAG, "No permission to access location!");
             ActivityCompat.requestPermissions(this,
                     new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
                     MY_PERMISSIONS_REQUEST_FINE_LOCATION);
@@ -194,6 +199,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 new LatLng(47.8173, 11.063), new LatLng(48.5361, 12.062));
         mMap.setLatLngBoundsForCameraTarget(MUNICH);
         mMap.setOnCircleClickListener(new CircleClickListener());
+        mMap.setIndoorEnabled(false);
 
 //        LatLng munich = new LatLng(48.137, 11.574);
         LatLng garching = new LatLng(48.262534, 11.667992);
@@ -204,13 +210,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.setOnCameraIdleListener(buttonClickListener);
 //        mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(MUNICH, 0));
 
-        geoJsonMap = new GeoJsonMap(mMap);
-        geoJsonMap.loadIndoorTopology(this);
+//        geoJsonMap = new GeoJsonMap(mMap);
+//        geoJsonMap.loadIndoorTopology(this);
         dijkstra = new ArrayList<>();
         for (int i = 0; i < routablePathForEachBuilding.size(); i++) {
             dijkstra.add(new GeoJSONDijkstra(routablePathForEachBuilding.get(i)));
         }
-        ArrayList<String> targetPointsIds = geoJsonMap.targetPointsIds;
+        ArrayList<String> targetPointsIds = GeoJsonMap.targetPointsIds;
         targetPointsIds.remove("Entrance of building");
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
                 android.R.layout.simple_dropdown_item_1line, targetPointsIds);
@@ -277,7 +283,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             previousDestination = mapUIElementsManager.target.getId();
             getNameScreenIntent.putExtra("destination", mapUIElementsManager.target.getId());
         }
-        if (mapUIElementsManager.source != null) {
+        if (mapUIElementsManager.source != null && mapUIElementsManager.target != null) {
+            Log.i(TAG, "Source building: " + getBuildingIdFromRoomName(mapUIElementsManager.source.getId()) + ", Destination building: " +
+                    getBuildingIdFromRoomName(mapUIElementsManager.target.getId()));
+        }
+        if (mapUIElementsManager.source != null && mapUIElementsManager.target != null &&
+                getBuildingIdFromRoomName(mapUIElementsManager.source.getId()).equals(getBuildingIdFromRoomName(mapUIElementsManager.target.getId()))) {
             getNameScreenIntent.putExtra("source", mapUIElementsManager.source.getId());
         }
         startActivityForResult(getNameScreenIntent, result);
@@ -292,7 +303,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             multiTokenizer.nextToken();
 
             index++;
-            Log.i(TAG, "MORE tokens");
+            //Log.i(TAG, "MORE tokens");
         }
         return index == 3;
     }
@@ -309,14 +320,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         return true;
     }
 
-    private static boolean isMWId(String id) {
+    private static boolean isMWId(String name) {
+        String id = getRoomIdFromBuildingName(name);
         StringTokenizer multiTokenizer = new StringTokenizer(id, ".");
         int index = 0;
         while (multiTokenizer.hasMoreTokens()) {
             multiTokenizer.nextToken();
 
             index++;
-            Log.i(TAG, "MORE tokens");
+            //Log.i(TAG, "MORE tokens");
         }
         return index == 1 && isInteger(id);
     }
@@ -325,23 +337,57 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         int level = 0;
         if (isGarchingMIId(id)) {
             level = Integer.valueOf(id.substring(1,2));
-            Log.i(TAG, "id: " + id + " is from Garching MI, level: " + level);
+            //Log.i(TAG, "id: " + id + " is from Garching MI, level: " + level);
         } else if (isMWId(id)) {
             level = Integer.valueOf(id.substring(0,1));
         } else {
-            Log.i(TAG, "id: " + id + " is not from Garching MI");
+            //Log.i(TAG, "id: " + id + " is not from Garching MI");
         }
         return level;
     }
 
+    public static String getRoomIdFromBuildingName(String name) {
+        StringTokenizer multiTokenizer = new StringTokenizer(name, ",");
+        int index = 0;
+        ArrayList<String> nameParts = new ArrayList<>();
+        while (multiTokenizer.hasMoreTokens()) {
+            nameParts.add(multiTokenizer.nextToken());
+
+            index++;
+            //Log.i(TAG, "MORE tokens");
+        }
+        return nameParts.get(0);
+    }
+
+    public String getBuildingIdFromRoomName(String name) {
+        StringTokenizer multiTokenizer = new StringTokenizer(name, ",");
+        int index = 0;
+        String buildingName = "";
+        ArrayList<String> nameParts = new ArrayList<>();
+        while (multiTokenizer.hasMoreTokens()) {
+            nameParts.add(multiTokenizer.nextToken());
+
+            index++;
+        }
+        //Log.i(TAG, "number of tokens: " + index);
+        if (index > 1) {
+            buildingName = nameParts.get(1).substring(1);
+            //Log.i(TAG, "buildingName: " + buildingName);
+            String id = buildingNameToId.get(buildingName);
+            //Log.i(TAG, "building id: " + id);
+            return id;
+        }
+        return buildingName;
+    }
+
     private void handleRouteRequest(final String source, final String targetName) {
         long unixTime = System.currentTimeMillis();
-        Log.i("getPath", "HandleRouteRequest, start: " + unixTime);
+        //Log.i("getPath", "HandleRouteRequest, start: " + unixTime);
 
         if (!source.equals("My Location") && !source.equals(targetName) && !(source.equals("Entrance of building")
                 && targetName.equals("entrance")) && !(targetName.equals("Entrance of building")
                 && source.equals("entrance"))) {
-            Log.i(TAG, "Source: " + source);
+            //Log.i(TAG, "Source: " + source);
             if (source.equals("Entrance of building")){
 //                mapUIElementsManager.target = findDestinationFromId(targetName);
                 mapUIElementsManager.source = geoJsonMap.findEntranceForDestination(mapUIElementsManager.target).getEntranceLatLngWithTags();
@@ -354,30 +400,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 mapUIElementsManager.target = findDestinationFromId(targetName);
             }
             mapUIElementsManager.sourceLevel = findLevelFromId(source);
-            Log.i(TAG, "Source level = " + mapUIElementsManager.sourceLevel);
+            //Log.i(TAG, "Source level = " + mapUIElementsManager.sourceLevel);
             mapUIElementsManager.destinationLevel = findLevelFromId(targetName);
-            Log.i(TAG, "Destination level = " + mapUIElementsManager.destinationLevel);
+            //Log.i(TAG, "Destination level = " + mapUIElementsManager.destinationLevel);
             if (mapUIElementsManager.source != null) {
-                Log.i(TAG, "Source found! : " + mapUIElementsManager.source.getId());
-//                mapUIElementsManager.target = findDestinationFromId(targetName);
                 if (mapUIElementsManager.target != null) {
-                    Log.i(TAG, "Destination found! : " + mapUIElementsManager.target.getId());
-                    unixTime = System.currentTimeMillis();
-                    Log.i("getPath", "HandleRouteRequest, calling startDijkstra: " + unixTime);
-//                    dijkstra.startDijkstra(mapUIElementsManager.source);
-                    unixTime = System.currentTimeMillis();
-                    Log.i("getPath", "HandleRouteRequest, after startDijkstra: " + unixTime);
                     mapUIElementsManager.routePolylineOptionsInLevels = null;
-//                    routePolylineOptionsGray = new PolylineOptions().width(15).color(Color.GRAY).zIndex(Integer.MAX_VALUE - 20);
-                    unixTime = System.currentTimeMillis();
-                    Log.i("getPath", "HandleRouteRequest, calling getPath: " + unixTime);
-
                     mapUIElementsManager.route = dijkstra.get(targetBuildingIndex).getPath(mapUIElementsManager.source);
-                    unixTime = System.currentTimeMillis();
-//                    Log.i("getPath", "route: Max Level: " + mapUIElementsManager.route.getMaxRouteLevel() +
-//                    ", Min Level: " + mapUIElementsManager.route.getMinRouteLevel() + ", number of paths for source: " +
-//                    mapUIElementsManager.route.getRouteHashMapForLevels().get(mapUIElementsManager.route.getSourceLevel()).size());
-
                     LatLng minPoint = new LatLng(dijkstra.get(targetBuildingIndex).minRouteLat, dijkstra.get(targetBuildingIndex).minRouteLng);
                     LatLng maxPoint = new LatLng(dijkstra.get(targetBuildingIndex).maxRouteLat, dijkstra.get(targetBuildingIndex).maxRouteLng);
                     mapUIElementsManager.handleRoutePolyline(routeHandler, mapUIElementsManager.target, minPoint, maxPoint);
@@ -412,21 +441,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        Log.i(TAG, "Return from Activity, resultCode: " + resultCode);
+        //Log.i(TAG, "Return from Activity, resultCode: " + resultCode);
 
         if (resultCode == RESULT_OK) {
             // Get the users name from the previous Activity
             String activityWeReturnedFrom = data.getStringExtra("Activity Name");
             if (activityWeReturnedFrom.equals("FindDestinationActivity")) {
-                Log.i(TAG, "Returned from Destination activity");
+                //Log.i(TAG, "Returned from Destination activity");
                 String destination = data.getStringExtra("Destination");
-                if (destination != null) {
-                    Log.i(TAG, "Destination: " + destination);
+                if (destination != null && !destination.equals("")) {
+                    //Log.i(TAG, "Destination: " + destination);
                     mapUIElementsManager.setDestinationOnMap(destination);
-                    Log.i(TAG, "Previous destination: " + previousDestination +
-                            ", current destination: " + mapUIElementsManager.target.getId());
+                    //Log.i(TAG, "Previous destination: " + previousDestination +
+//                            ", current destination: " + mapUIElementsManager.target.getId());
                     if (!previousDestination.equals(mapUIElementsManager.target.getId())) {
                         previousDestination = mapUIElementsManager.target.getId();
+//                        mapUIElementsManager.sourceName = "Entrance of Building";
                         AsyncTask.execute(new Runnable() {
                             @Override
                             public void run() {
@@ -439,35 +469,43 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             } else {
                 mapUIElementsManager.sourceName = data.getStringExtra("Starting point");
                 mapUIElementsManager.targetName = data.getStringExtra("Destination");
-                Log.i(TAG, "Source: " + mapUIElementsManager.sourceName + ", Destination: " + mapUIElementsManager.targetName);
+                //Log.i(TAG, "Source: " + mapUIElementsManager.sourceName + ", Destination: " + mapUIElementsManager.targetName);
                 buttonClickListener.showDirectionsButtons();
                 if (!mapUIElementsManager.sourceName.equals("My Location") && !mapUIElementsManager.sourceName.equals(mapUIElementsManager.targetName)
                         && !(mapUIElementsManager.sourceName.contains("ntrance")
                         && mapUIElementsManager.targetName.contains("ntrance")) && !(mapUIElementsManager.targetName.contains("ntrance")
                         && mapUIElementsManager.sourceName.contains("ntrance"))) {
 
-                    if (mapUIElementsManager.sourceName.contains("ntrance")) {
-                        mapUIElementsManager.sourceName = "Entrance of building";
-                    }
-                    ProgressBar progressBar = findViewById(R.id.progressBar2);
-                    progressBar.setVisibility(ProgressBar.VISIBLE);
+//                    if (mapUIElementsManager.sourceName.contains("ntrance")) {
+//                        mapUIElementsManager.sourceName = "Entrance of building";
+//                    }
+                    final String targetId = getBuildingIdFromRoomName(mapUIElementsManager.targetName);
+                    final String sourceId = getBuildingIdFromRoomName(mapUIElementsManager.sourceName);
+                    //Log.i(TAG, "Building: " + targetId);
 
-                    AsyncTask.execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            long unixTime = System.currentTimeMillis();
-                            Log.i(TAG, "2. Previous destination: " + previousDestination +
-                                    ", current destination: " + mapUIElementsManager.target.getId());
-                            if (!previousDestination.equals(mapUIElementsManager.targetName)) {
-                                previousDestination = mapUIElementsManager.targetName;
-                                targetBuildingIndex = buildingIndexes.get(mapUIElementsManager.target.getBuildingId());
-                                dijkstra.get(targetBuildingIndex).startDijkstra(findDestinationFromId(mapUIElementsManager.targetName));
+                    if (targetId.equals(sourceId) || mapUIElementsManager.sourceName.equals("Entrance of building")) {
+                        ProgressBar progressBar = findViewById(R.id.progressBar2);
+                        progressBar.setVisibility(ProgressBar.VISIBLE);
+                        AsyncTask.execute(new Runnable() {
+                            @Override
+                            public void run() {
+//                                long unixTime = System.currentTimeMillis();
+                                //Log.i(TAG, "2. Previous destination: " + previousDestination +
+//                                        ", current destination: " + mapUIElementsManager.targetName);
+                                if (!previousDestination.equals(mapUIElementsManager.targetName)) {
+                                    previousDestination = mapUIElementsManager.targetName;
+//                                targetBuildingIndex = buildingIndexes.get(mapUIElementsManager.target.getBuildingId());
+                                    targetBuildingIndex = buildingIndexes.get(targetId);
+                                    dijkstra.get(targetBuildingIndex).startDijkstra(findDestinationFromId(mapUIElementsManager.targetName));
+                                }
+                                //Log.i("getPath", "HandleRouteRequest, onActivityResult: " + unixTime);
+                                handleRouteRequest(mapUIElementsManager.sourceName, mapUIElementsManager.targetName);
+                                //TODO your background code
                             }
-                            Log.i("getPath", "HandleRouteRequest, onActivityResult: " + unixTime);
-                            handleRouteRequest(mapUIElementsManager.sourceName, mapUIElementsManager.targetName);
-                            //TODO your background code
-                        }
-                    });
+                        });
+                    } else {
+                        Toast.makeText(this, "Inter-building routing is not supported yet", Toast.LENGTH_LONG).show();
+                    }
                 }
 
             }

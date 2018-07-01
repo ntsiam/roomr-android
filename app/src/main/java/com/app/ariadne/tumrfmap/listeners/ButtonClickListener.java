@@ -26,6 +26,7 @@ public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCa
     MapManager mapManager;
     MapUIElementsManager mapUIElementsManager;
     Context context;
+    ToggleButton level4;
     ToggleButton level3;
     ToggleButton level2;
     ToggleButton level1;
@@ -84,9 +85,9 @@ public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCa
     public void clickFloor(int requestedLevel) {
         String level;
         level = String.valueOf(requestedLevel);
-        Log.i(TAG, "Requested level: " + level);
+        //Log.i(TAG, "Requested level: " + level);
         level = level.replace("-", "n");
-        Log.i(TAG, "Requested level after replace: " + level);
+        //Log.i(TAG, "Requested level after replace: " + level);
         int indexOfLevelInButtonList = MAX_FLOOR - requestedLevel;
         int currentIndexInButtonList = 0;
         for (ToggleButton levelButton: floorButtonList) {
@@ -94,7 +95,7 @@ public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCa
                 levelButton.setChecked(false);
             } else {
                 if (!levelButton.isChecked()) {
-                    Log.i(TAG, "Entered here");
+                    //Log.i(TAG, "Entered here");
                     level = ""; //no tiles for ""
                     if (mapUIElementsManager.route != null) {
                         mapUIElementsManager.addRouteLineFromPolyLineOptions(Integer.MIN_VALUE);
@@ -109,10 +110,14 @@ public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCa
             currentIndexInButtonList++;
         }
         mapUIElementsManager.level = level;
+        if (!level.equals("")) {
+            mapUIElementsManager.addRouteMarkers(requestedLevel);
+        }
     }
 
     private void initFloorButtonList() {
         MapsActivity mapsActivity = (MapsActivity)context;
+        level4 = mapsActivity.findViewById(R.id.button4);
         level3 = mapsActivity.findViewById(R.id.button3);
         level2 = mapsActivity.findViewById(R.id.button2);
         level1 = mapsActivity.findViewById(R.id.button1);
@@ -122,6 +127,7 @@ public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCa
         leveln3 = mapsActivity.findViewById(R.id.buttonn3);
         leveln4 = mapsActivity.findViewById(R.id.buttonn4);
         floorButtonList = new ArrayList<>();
+        floorButtonList.add(level4);
         floorButtonList.add(level3);
         floorButtonList.add(level2);
         floorButtonList.add(level1);
@@ -186,9 +192,11 @@ public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCa
 
     @Override
     public void onClick(View view) {
-        Log.i(TAG, "onClick");
-        if (view.getId() == R.id.button3) {
-            clickFloor(3);
+        //Log.i(TAG, "onClick");
+        if (view.getId() == R.id.button4) {
+            clickFloor(4);
+        } else if (view.getId() == R.id.button3) {
+                clickFloor(3);
         } else if (view.getId() == R.id.button2) {
             clickFloor(2);
         } else if (view.getId() == R.id.button1) {
@@ -220,6 +228,7 @@ public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCa
     }
 
     private void setButtonVisibilityBasedOnCameraPosition() {
+        level4.setVisibility(Button.GONE);
         level3.setVisibility(Button.GONE);
         level2.setVisibility(Button.GONE);
         level1.setVisibility(Button.GONE);

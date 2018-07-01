@@ -2,6 +2,7 @@ package com.app.ariadne.tumrfmap.geojson;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.os.AsyncTask;
 import android.util.Log;
 
 import com.app.ariadne.tumrfmap.R;
@@ -48,13 +49,15 @@ public class GeoJsonMap {
     public static LatLngWithTags startingPoint;
     public ArrayList<String> mapLevels = new ArrayList<>();
     public ArrayList<ArrayList<GeoJsonFeature>> mapInLevels = new ArrayList<>();
-    public static final int[] mapSources = {R.raw.routing_all, R.raw.path_all_mw};
+    public static final int[] mapSources = {R.raw.mi, R.raw.path_all_mw, R.raw.mc};
     HashMap<String, Entrance> entranceHashMap;
     public static ArrayList<ArrayList<LatLngWithTags>> targetPointsTaggedForEachBuilding;
     public static ArrayList<ArrayList<String>> targetPointsIdsForEachBuilding;
     public static ArrayList<ArrayList<String>> sourcePointsIdsForEachBuilding;
     public static ArrayList<ArrayList<ArrayList<LatLngWithTags>>> routablePathForEachBuilding;
     public static HashMap<String, Integer> buildingIndexes;
+    public static HashMap<String, String> buildingIdToName;
+    public static HashMap<String, String> buildingNameToId;
 
 
 
@@ -62,34 +65,43 @@ public class GeoJsonMap {
     public GeoJsonMap(GoogleMap mMap) {
         this.mMap = mMap;
         entranceHashMap = new HashMap<>();
+        buildingIdToName = new HashMap<>();
+        buildingNameToId = new HashMap<>();
+        buildingIdToName.put("mi", "Mathematics Informatics");
+        buildingIdToName.put("mw", "Mechanical Engineering");
+        buildingIdToName.put("mc", "Main Campus");
+        buildingNameToId.put("Mathematics Informatics", "mi");
+        buildingNameToId.put("Mechanical Engineering", "mw");
+        buildingNameToId.put("Main Campus", "mc");
     }
 
-    public void loadIndoorGeometry(Context appContext, int currentLevel) {
-        removeLayer(indoorGeometryLayer);
-        try {
-            //TODO: add polyline instead -> Maybe can click anywhere on the map and get the position
-            indoorGeometryLayer = new GeoJsonLayer(mMap, findGeometryMapToLoad(currentLevel),
-                    appContext);
-        } catch (JSONException | IOException e) {
-            System.out.println("Error while loading Geojson data!!!");
-            e.printStackTrace();
-            return;
-        }
-        removePointsFromMap(indoorGeometryLayer);
-        setGeometryLayerStyle(indoorGeometryLayer, currentLevel);
-//        divideMapInLevels(indoorGeometryLayer);
-//        int index = currentLevel;
-//        if (index < 0) {
-//            index = -index;
-//        }
-//        GeoJsonLayer indoorLayerWithLevels = new GeoJsonLayer(mMap, new JSONObject());
-//        for (GeoJsonFeature feature: mapInLevels.get(index)) {
-//            indoorLayerWithLevels.addFeature(feature);
-//        }
-//        indoorGeometryLayer = indoorLayerWithLevels;
-//        indoorLayerWithLevels.addLayerToMap();
-        indoorGeometryLayer.addLayerToMap();
-    }
+//    public void loadIndoorGeometry(Context appContext, int currentLevel) {
+//        removeLayer(indoorGeometryLayer);
+////        try {
+////            //TODO: add polyline instead -> Maybe can click anywhere on the map and get the position
+////            indoorGeometryLayer = new GeoJsonLayer(mMap, findGeometryMapToLoad(currentLevel),
+////                    appContext);
+////        } catch (JSONException | IOException e) {
+//////            Log.i(TAG, "Error while loading Geojson data!!!");
+////            e.printStackTrace();
+////            return;
+////        }
+//        removePointsFromMap(indoorGeometryLayer);
+//        setGeometryLayerStyle(indoorGeometryLayer, currentLevel);
+////        divideMapInLevels(indoorGeometryLayer);
+////        int index = currentLevel;
+////        if (index < 0) {
+////            index = -index;
+////        }
+////        GeoJsonLayer indoorLayerWithLevels = new GeoJsonLayer(mMap, new JSONObject());
+////        for (GeoJsonFeature feature: mapInLevels.get(index)) {
+////            indoorLayerWithLevels.addFeature(feature);
+////        }
+////        indoorGeometryLayer = indoorLayerWithLevels;
+////        indoorLayerWithLevels.addLayerToMap();
+//        indoorGeometryLayer.addLayerToMap();
+//        return;
+//    }
 
     private void setGeometryLayerStyle(GeoJsonLayer indoorGeometryLayer, int currentLevel) {
         indoorGeometryLayer.getDefaultLineStringStyle().setColor(Color.BLACK);
@@ -98,19 +110,19 @@ public class GeoJsonMap {
         indoorGeometryLayer.getDefaultPolygonStyle().setFillColor(fillColor);
     }
 
-    private int findGeometryMapToLoad(int currentLevel) {
-        switch (currentLevel) {
-//            case 0: return R.raw.indoor_map_ga_mi_0;
-//            case 1: return R.raw.indoor_map_ga_mi_1;
-//            case 2: return R.raw.indoor_map_ga_mi_2;
-//            case 0: return R.raw.munchner_freiheit;
-//            case 1: return R.raw.munchner_freiheit;
-//            case 2: return R.raw.munchner_freiheit;
-//            case 3: return R.raw.munchner_freiheit;
-//            case 3: return R.raw.indoor_map_ga_mi_3;
-            default: return R.raw.indoor_path_ga_mi;
-        }
-    }
+//    private int findGeometryMapToLoad(int currentLevel) {
+//        switch (currentLevel) {
+////            case 0: return R.raw.indoor_map_ga_mi_0;
+////            case 1: return R.raw.indoor_map_ga_mi_1;
+////            case 2: return R.raw.indoor_map_ga_mi_2;
+////            case 0: return R.raw.munchner_freiheit;
+////            case 1: return R.raw.munchner_freiheit;
+////            case 2: return R.raw.munchner_freiheit;
+////            case 3: return R.raw.munchner_freiheit;
+////            case 3: return R.raw.indoor_map_ga_mi_3;
+////            default: return R.raw.indoor_path_ga_mi;
+//        }
+//    }
 
     private void findMapSourceBasedOnLocation() {
 //        if (gpsLocation != null) {
@@ -162,7 +174,6 @@ public class GeoJsonMap {
                 Iterable props = feature.getProperties();
                 for (Object prop : props) {
                     String property = prop.toString();
-//            System.out.println(property);
                     if (property.contains("level")) {
                         ArrayList<Integer> tempLevels = GeoJsonHelper.getLevelOfElement(property);
 
@@ -205,22 +216,25 @@ public class GeoJsonMap {
         indoorTopologyLayer = new ArrayList<>();
         ArrayList<JSONObject> geojsonMaps = new ArrayList<>();
         try {
+            //Log.i(TAG, "IndoorTopology: Starting time: " + System.currentTimeMillis());
             for (int mapSource: mapSources) {
-                indoorTopologyLayer.add(new GeoJsonLayer(mMap, mapSource,
-                        appContext));
+                GeoJsonLayer newLayer = new GeoJsonLayer(mMap, mapSource,appContext);
+                indoorTopologyLayer.add(newLayer);
+                addNewBuildingTopology(newLayer);
 //            indoorTopologyLayer = new GeoJsonLayer(mMap, R.raw.munchner_freiheit,
 //                    appContext);
-                Log.d(TAG, "indoorTopology: " + indoorTopologyLayer);
+//                //Log.d(TAG, "indoorTopology: " + indoorTopologyLayer);
             }
+            //Log.i(TAG, "IndoorTopology: Ending time: " + System.currentTimeMillis());
         } catch (JSONException | IOException e) {
-            System.out.println("Error while loading Geojson data!!");
+//            Log.i(TAG, "Error while loading Geojson data!!");
             e.printStackTrace();
             return;
         }
-        for (GeoJsonLayer indoorLayer: indoorTopologyLayer) {
+//        for (GeoJsonLayer indoorLayer: indoorTopologyLayer) {
 //            processIndoorPathFeatures(indoorLayer);
-            addNewBuildingTopology(indoorLayer);
-        }
+//            addNewBuildingTopology(indoorLayer);
+//        }
 
         interpolatedCorridors = GeoJsonHelper.interpolateLinesLatLng(corridors);
 //            interpolatedLines = interpolateLines(latLngArrayList);
@@ -266,7 +280,6 @@ public class GeoJsonMap {
     }
 
     private void processIndoorPathFeatures(GeoJsonLayer indoorPathLayer) {
-        System.out.println("process!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
         Iterable<GeoJsonFeature> features = indoorPathLayer.getFeatures();
         ArrayList<GeoJsonFeature> featureArrayList = Lists.newArrayList(features);
         for (GeoJsonFeature feature : featureArrayList) {
@@ -294,21 +307,21 @@ public class GeoJsonMap {
         routablePath = GeoJsonHelper.findStraightLines(routablePath);
     }
 
-    public static void printRoutablePath(ArrayList<ArrayList<LatLngWithTags>> routablePath) {
-        for (int i = 0; i < routablePath.size(); i++) {
-            for (int j = 0; j < routablePath.get(i).size(); j++) {
-                System.out.println("Path: " + routablePath.get(i).get(j).getLatlng() + ", level: " + routablePath.get(i).get(j).getLevel());
-            }
-        }
-    }
+//    public static void printRoutablePath(ArrayList<ArrayList<LatLngWithTags>> routablePath) {
+//        for (int i = 0; i < routablePath.size(); i++) {
+//            for (int j = 0; j < routablePath.get(i).size(); j++) {
+//                Log.i("Print", "Path: " + routablePath.get(i).get(j).getLatlng() + ", level: " + routablePath.get(i).get(j).getLevel());
+//            }
+//        }
+//    }
 
-    public static void printRoutablePathLatLng(ArrayList<ArrayList<LatLng>> routablePath) {
-        for (int i = 0; i < routablePath.size(); i++) {
-            for (int j = 0; j < routablePath.get(i).size(); j++) {
-                System.out.println("Path: " + routablePath.get(i).get(j) + ", level: " + routablePath.get(i).get(j));
-            }
-        }
-    }
+//    public static void printRoutablePathLatLng(ArrayList<ArrayList<LatLng>> routablePath) {
+//        for (int i = 0; i < routablePath.size(); i++) {
+//            for (int j = 0; j < routablePath.get(i).size(); j++) {
+//                Log.i("Print","Path: " + routablePath.get(i).get(j) + ", level: " + routablePath.get(i).get(j));
+//            }
+//        }
+//    }
 
     private void handleTargetPoint(GeoJsonFeature feature) {
         LatLng latLng = ((LatLng) feature.getGeometry().getGeometryObject());
@@ -334,7 +347,7 @@ public class GeoJsonMap {
                 }
             }
             if (property.contains("building_id=")) {
-                Log.i(TAG, "building_id: " + GeoJsonHelper.getValueOfProperty(property));
+//                //Log.i(TAG, "building_id: " + GeoJsonHelper.getValueOfProperty(property));
                 buildingId = GeoJsonHelper.getValueOfProperty(property);
                 if (!buildingIndexes.containsKey(buildingId)) {
                     buildingIndexes.put(buildingId, routablePathForEachBuilding.size());
@@ -342,14 +355,14 @@ public class GeoJsonMap {
 
             } else if (property.contains("id=")) {
                 id = GeoJsonHelper.getValueOfProperty(property);
-                System.out.println("New point, id: " + id);
+//                Log.i(TAG, "New point, id: " + id);
                 if (id.equals("entrance")) {
                     isEntrance = true;
                 }
             }
             if (property.contains("entrance=")) {
                 isEntrance = true;
-                Log.i(TAG, "Entrance: ");
+//                //Log.i(TAG, "Entrance: ");
             }
             if (property.contains("address=")) {
                 address = GeoJsonHelper.getValueOfProperty(property);
@@ -364,39 +377,38 @@ public class GeoJsonMap {
                 building = GeoJsonHelper.getValueOfProperty(property);
             }
             if (property.contains("ref=")) {
-                Log.i(TAG, "Has ref: " + GeoJsonHelper.getValueOfProperty(property));
+//                //Log.i(TAG, "Has ref: " + GeoJsonHelper.getValueOfProperty(property));
                 ref = GeoJsonHelper.getValueOfProperty(property);
             }
         }
 
 
         if (!isEntrance && levels.size() > 0 && !id.equals("") && !id.equals("entrance")) {
+            id += ", " + buildingIdToName.get(buildingId);
             LatLngWithTags taggedPoint = new LatLngWithTags(latLng, String.valueOf(levels.get(0)), id, buildingId);
             id = "";
 //            if (!buildingId.equals("")) {
 //                taggedPoint.setBuildingId(buildingId);
 //            }
-            System.out.println("TaggedPoint: " + taggedPoint);
             targetPointsTagged.add(taggedPoint);
             targetPointsIds.add(taggedPoint.getId());
             sourcePointsIds.add(taggedPoint.getId());
         } else if (isEntrance) {
-            id += " " + buildingId;
+            id += ", " + buildingIdToName.get(buildingId);
             LatLngWithTags taggedPoint = new LatLngWithTags(latLng, "0", id, buildingId);
             targetPointsTagged.add(taggedPoint);
             targetPointsIds.add(taggedPoint.getId());
             sourcePointsIds.add(taggedPoint.getId());
-            Log.i(TAG, "There is an entrance");
+//            //Log.i(TAG, "There is an entrance");
             if (!building.equals("") && !address.equals("") && !city.equals("") && !plz.equals("")) {
                 Entrance newEntrance = new Entrance(address, building, city, plz, taggedPoint);
-                Log.i(TAG, "Add new entrance: " + newEntrance.getAddress());
+//                //Log.i(TAG, "Add new entrance: " + newEntrance.getAddress());
                 address = "";
                 building = "";
                 plz = "";
                 city = "";
                 entranceHashMap.put(buildingId, newEntrance);
             }
-//            System.out.println("No tagged points!");
         }
     }
 
@@ -418,15 +430,13 @@ public class GeoJsonMap {
         for (Object prop : props) {
             String property = prop.toString();
             if (property.contains("level")) {
-//                System.out.println("!!!!!!!!!Adding platform!!!!!!!");
-                printRoutablePathLatLng(latLngList);
+//                printRoutablePathLatLng(latLngList);
                 for (ArrayList<LatLng> latLngs: latLngList) {
                     targetLatLngList.add(latLngs);
                     addLineStringWithLevel(property, latLngs, targetLatLngListWithLevels);
                 }
             }
         }
-//        System.out.println("Routable path: ");
 //        printRoutablePath(routablePath);
     }
 
@@ -460,24 +470,25 @@ public class GeoJsonMap {
 
     public static LatLngWithTags findDestinationFromId(String destinationId) {
         int targetIndex = 0;
-//        System.out.println("Taggedpoints: " + targetPointsTagged.size());
+//        Log.i(TAG, "Taggedpoints: " + targetPointsTagged.size());
         for (LatLngWithTags candidate : targetPointsTagged) {
-//            System.out.println("Candidate: " + candidate.getId() + ", destination: " + destinationId);
+//            Log.i(TAG, "Candidate: " + candidate.getId() + ", destination: " + destinationId);
             if (candidate.getId().equals(destinationId)) {
                 break;
             }
             targetIndex++;
         }
         if (targetIndex < targetPointsTagged.size()) {
-            Log.i("findDestinationFromId", "Point is: " + targetPointsTagged.get(targetIndex).getId());
+            //Log.i("findDestinationFromId", "Point is: " + targetPointsTagged.get(targetIndex).getId());
             return targetPointsTagged.get(targetIndex);
         } else {
-            Log.i("findDestinationFromId", "Point not found!");
+            //Log.i("findDestinationFromId", "Point not found!");
             return null;
         }
     }
 
     public Entrance findEntranceForDestination(LatLngWithTags destination) {
+//        return entranceHashMap.get(destination.getBuildingId());
         return entranceHashMap.get(destination.getBuildingId());
     }
 

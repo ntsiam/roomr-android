@@ -26,7 +26,6 @@ public class MapLocationListener implements LocationListener {
     private MapsActivity mainActivity;
 
     public MapLocationListener(Context applicationContext, MapsActivity mainActivity) {
-        System.out.println("MapLocationListerner constructor!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
         this.applicationContext = applicationContext;
         this.mainActivity = mainActivity;
     }
@@ -39,7 +38,6 @@ public class MapLocationListener implements LocationListener {
     public void onLocationChanged(Location location) {
         double latitude = location.getLatitude();
         double longitude = location.getLongitude();
-        System.out.println("MapLocationListerner onLocationChanged, latitude: " + latitude + ", longitude: " + longitude);
         LatLng latLng = new LatLng(latitude, longitude);
         Geocoder geocoder = new Geocoder(applicationContext);
         accuracy = location.getAccuracy();
@@ -69,7 +67,7 @@ public class MapLocationListener implements LocationListener {
 
         gpsLocation = latLng;
         if (isFirstTime) {
-            Log.i("LocationListener", "Got new location: " + gpsLocation.toString());
+            //Log.i("LocationListener", "Got new location: " + gpsLocation.toString());
 //            Toast.makeText(mainActivity, "GPS location: " + gpsLocation.toString() + ", accuracy: " + accuracy
 //                    + ", altitude: " + altitude, Toast.LENGTH_SHORT).show();
             isFirstTime = false;

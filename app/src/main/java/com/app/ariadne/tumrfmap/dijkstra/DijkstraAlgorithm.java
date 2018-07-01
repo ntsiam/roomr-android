@@ -33,7 +33,7 @@ public class DijkstraAlgorithm {
 
     public void execute(Vertex source) {
         long unixTime = System.currentTimeMillis();
-        Log.i("Execute", "Execute 1 before: " + unixTime);
+//        Log.i("Execute", "Execute 1 before: " + unixTime);
 
         settledNodes = new HashSet<Vertex>();
         unSettledNodes = new HashSet<Vertex>();
@@ -48,14 +48,14 @@ public class DijkstraAlgorithm {
             findMinimalDistances(node);
         }
         unixTime = System.currentTimeMillis();
-        Log.i("Execute", "Execute 1 after: " + unixTime);
+//        Log.i("Execute", "Execute 1 after: " + unixTime);
     }
 
     public ArrayList<Vertex> getNodesWithoutPredecessors() {
         ArrayList<Vertex> nullNodes = new ArrayList<>();
         for (Vertex node: nodes) {
             if (predecessors.get(node) == null) {
-                System.out.println("Null predecessors for node: " + node.getId());
+//                System.out.println("Null predecessors for node: " + node.getId());
                 nullNodes.add(node);
             }
         }

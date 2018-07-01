@@ -29,7 +29,7 @@ public class FileDownloader {
 
 
     public void downloadFile(String url, final String destinationPath, final String filename) {
-        Log.i("Downloader", "URL: " + url);
+//        Log.i("Downloader", "URL: " + url);
         ImageRequest imgRequest = new ImageRequest(url, new Response.Listener<Bitmap>() {
             @Override
             public void onResponse(Bitmap response) {

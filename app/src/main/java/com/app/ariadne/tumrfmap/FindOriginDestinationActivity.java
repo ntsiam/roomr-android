@@ -116,7 +116,7 @@ public class FindOriginDestinationActivity extends Activity implements AdapterVi
 
     @Override
     public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-        Log.i("SECOND", "View clicked: " + view.getId());
+        //Log.i("SECOND", "View clicked: " + view.getId());
         /*
         if (view.getId() == R.id.starting_point) {
             autoCompleteSource.setText("");
@@ -153,7 +153,7 @@ public class FindOriginDestinationActivity extends Activity implements AdapterVi
     @Override
     public void onBackPressed() {
         // your code.
-        Log.i(TAG, "Returning to previous activity");
+        //Log.i(TAG, "Returning to previous activity");
         Intent goingBack = new Intent();
         setResult(RESULT_CANCELED, goingBack);
         // Close this Activity
@@ -162,11 +162,11 @@ public class FindOriginDestinationActivity extends Activity implements AdapterVi
 
     @Override
     public void onClick(View view) {
-        Log.i(TAG, "Clicked on view: " + view.getId());
+        //Log.i(TAG, "Clicked on view: " + view.getId());
         if (view.getId() == R.id.starting_point) {
             autoCompleteSource.setText("");
         } else if (view.getId() == R.id.destination) {
-            Log.i(TAG, "Destination view: " + view.getId());
+            //Log.i(TAG, "Destination view: " + view.getId());
             autoCompleteDestination.setText("");
         }
 
@@ -178,7 +178,7 @@ public class FindOriginDestinationActivity extends Activity implements AdapterVi
         if (view.getId() == R.id.starting_point) {
             autoCompleteSource.setText("");
         } else if (view.getId() == R.id.destination) {
-            Log.i(TAG, "Destination view: " + view.getId());
+            //Log.i(TAG, "Destination view: " + view.getId());
             autoCompleteDestination.setText("");
         }
 

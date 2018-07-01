@@ -10,6 +10,14 @@
     android:orientation="vertical"
     tools:context="com.app.ariadne.tumrfmap.MapsActivity">
 
+    <ViewStub
+        android:id="@+id/stub_import"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:inflatedId="@+id/panel_import"
+        android:layout="@layout/activity_splash" />
+
     <fragment
         android:id="@+id/map"
         android:layout_width="match_parent"
@@ -120,13 +128,24 @@
         android:layout_height="300dp"
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
-        android:layout_marginTop="150dp"
+        android:layout_marginTop="100dp"
         android:scrollbars="none">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical">
+
+            <ToggleButton
+                android:id="@+id/button4"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_above="@+id/button3"
+                android:layout_alignParentStart="true"
+                android:text="4"
+                android:textOff="4"
+                android:textOn="4"
+                android:visibility="gone" />
 
             <ToggleButton
                 android:id="@+id/button3"

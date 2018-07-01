@@ -3,8 +3,12 @@ package com.app.ariadne.tumrfmap.geojson;
 import android.graphics.Color;
 import android.util.Log;
 
+import com.app.ariadne.tumrfmap.R;
 import com.app.ariadne.tumrfmap.models.Route;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.maps.android.SphericalUtil;
 import com.google.maps.android.data.LineString;
@@ -98,7 +102,7 @@ public class GeoJSONDijkstra {
         for (int i = 0; i < vertices.size(); i++) {
 //            System.out.println("point: " + vertices.get(i).getId() + ", start: " + startName);
             if (vertices.get(i).getId().equals(startName)) {
-                System.out.println("Target found: " + vertices.get(i).getId().equals(startName));
+//                System.out.println("Target found: " + vertices.get(i).getId().equals(startName));
                 this.level = vertices.get(i).getLevel();
                 index = i;
                 break;
@@ -113,8 +117,8 @@ public class GeoJSONDijkstra {
             dijkstraAlgorithm.execute(vertices.get(index));
 //            ArrayList<Vertex> nodesWithoutpredecessors = dijkstraAlgorithm.getNodesWithoutPredecessors();
 //            System.out.println("Start dijkstra from: " + vertices.get(index).getId());
-        } else {
-            System.out.println("Dijkstra starting point not found!!!!!!");
+//        } else {
+//            System.out.println("Dijkstra starting point not found!!!!!!");
         }
     }
 
@@ -145,26 +149,27 @@ public class GeoJSONDijkstra {
         ArrayList<LatLng> pathArrayList = new ArrayList<>();
         if (index > 0) {
             path = dijkstraAlgorithm.getPath(vertices.get(index));
-        } else {
-            System.out.println("Destination not found!");
+//        } else {
+//            System.out.println("Destination not found!");
         }
         return path;
     }
 
     public Route getPath(LatLngWithTags destination) {
         long unixTime = System.currentTimeMillis();
-        Log.i("getPath", "HandleRouteRequest, getPath, Start: " + unixTime);
+//        Log.i("getPath", "HandleRouteRequest, getPath, Start: " + unixTime);
         initRouteMinMax();
         LinkedList<Vertex> path;
         LineString pathLineString;
+        HashMap<Integer, ArrayList<MarkerOptions>> pathStairMarkers = new HashMap<>();
         HashMap<Integer, ArrayList<PolylineOptions>> pathHashMapForEachLevel = new HashMap<>();
         ArrayList<PolylineOptions> polylineOptionsInLevels = new ArrayList<>();
-        PolylineOptions polylineOptions = new PolylineOptions().width(18).color(Color.RED).zIndex(Integer.MAX_VALUE - 1000);
+        PolylineOptions polylineOptions = new PolylineOptions().width(10).color(Color.RED).zIndex(Integer.MAX_VALUE - 1000);
         ArrayList<LatLng> pathArrayList = new ArrayList<>();
 //        System.out.println("Target: " + vertices.get(index).toString());
         path = getGraphPath(destination);
         path = removePathDuplicates(path);
-        Log.i("GEOJSONDIJKSTRA", "Path found");
+//        Log.i("GEOJSONDIJKSTRA", "Path found");
         if (path != null) {
             int prevLevel = Integer.MIN_VALUE;
             LatLng prevPoint = null;
@@ -193,7 +198,7 @@ public class GeoJSONDijkstra {
                     minRouteLng = nextPoint.longitude;
                 }
                 if (prevLevel == level) {
-                    System.out.println("Next point level: " + level);
+//                    System.out.println("Next point level: " + level);
 
                     pathArrayList.add(nextPoint);
                     polylineOptions.add(nextPoint);
@@ -201,6 +206,7 @@ public class GeoJSONDijkstra {
                     if (prevLevel != Integer.MIN_VALUE) {
 //                            polylineOptions.add(nextPoint);
                         polylineOptionsInLevels.add(polylineOptions);
+
 //                        if (!pathHashMapForEachLevel.containsKey(prevLevel)) {
 //                            pathHashMapForEachLevel.put(level, new ArrayList<PolylineOptions>());
 //                            Log.i("GeoJSONDijkstra:getPath", "Adding new level: " + prevLevel);
@@ -211,10 +217,11 @@ public class GeoJSONDijkstra {
 //                        pathHashMapForEachLevel.put(level, polyline);
                         addPolylineToHashMap(pathHashMapForEachLevel, prevLevel, polylineOptions);
                     }
-                    polylineOptions = new PolylineOptions().width(20).color(Color.RED).zIndex(Integer.MAX_VALUE - 1000);
+                    polylineOptions = new PolylineOptions().width(10).color(Color.RED).zIndex(Integer.MAX_VALUE - 1000);
                     if (prevPoint != null) {
                         pathArrayList.add(prevPoint);
                         polylineOptions.add(prevPoint);
+                        addPathStairMarker(pathStairMarkers, prevPoint, prevLevel, level);
                     }
                     pathArrayList.add(nextPoint);
                     polylineOptions.add(nextPoint);
@@ -224,33 +231,54 @@ public class GeoJSONDijkstra {
             }
             polylineOptionsInLevels.add(polylineOptions);
             addPolylineToHashMap(pathHashMapForEachLevel, prevLevel, polylineOptions);
-        } else {
-            System.out.println("Path not found!");
+//        } else {
+//            System.out.println("Path not found!");
         }
         unixTime = System.currentTimeMillis();
-        Log.i("GeoJSONDijkstra:getPath", "HandleRouteRequest, getPath, End: " + unixTime);
+//        Log.i("GeoJSONDijkstra:getPath", "HandleRouteRequest, getPath, End: " + unixTime);
 
-        Route routeForEachLevel = new Route(pathHashMapForEachLevel, maxRoutelevel, minRouteLevel, sourceLevel);
+        Route routeForEachLevel = new Route(pathHashMapForEachLevel, maxRoutelevel, minRouteLevel, sourceLevel, pathStairMarkers);
 
         return routeForEachLevel;
+    }
+
+    private void addPathStairMarker(HashMap<Integer, ArrayList<MarkerOptions>> pathStairMarkers, LatLng point, int prevLevel, int newLevel) {
+        MarkerOptions stair;
+        ArrayList<MarkerOptions> oldList;
+        if (prevLevel - newLevel < 0) {
+            stair = new MarkerOptions()
+                    .position(point)
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.stairs_up)).title("Take the stairs up one level");
+        } else {
+            stair = new MarkerOptions()
+                    .position(point)
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.stairs_down)).title("Take the stairs down one level");
+        }
+        if (pathStairMarkers.containsKey(prevLevel)) {
+            oldList = pathStairMarkers.get(prevLevel);
+        } else {
+            oldList = new ArrayList<>();
+        }
+        oldList.add(stair);
+        pathStairMarkers.put(prevLevel, oldList);
     }
 
     private void addPolylineToHashMap(HashMap<Integer, ArrayList<PolylineOptions>> pathHashMapForEachLevel, int level,
                                       PolylineOptions polylineOptions) {
         if (!pathHashMapForEachLevel.containsKey(level)) {
             pathHashMapForEachLevel.put(level, new ArrayList<PolylineOptions>());
-            Log.i("GeoJSONDijkstra:getPath", "Adding new level: " + level);
+//            Log.i("GeoJSONDijkstra:getPath", "Adding new level: " + level);
         }
         ArrayList<PolylineOptions> polyline = pathHashMapForEachLevel.get(level);
         polyline.add(polylineOptions);
-        Log.i("GeoJSONDijkstra:getPath", "Adding to level: " + level + ", new size: " + pathHashMapForEachLevel.get(level).size());
+//        Log.i("GeoJSONDijkstra:getPath", "Adding to level: " + level + ", new size: " + pathHashMapForEachLevel.get(level).size());
         pathHashMapForEachLevel.put(level, polyline);
     }
 
     private LinkedList<Vertex> removePathDuplicates(LinkedList<Vertex> path) {
         LinkedList<Vertex> pathWithoutDuplicates = new LinkedList<>();
         HashMap<String, Integer> hashMap = new HashMap<>();
-         for (Vertex point : path) {
+          for (Vertex point : path) {
             if (!hashMap.containsKey(point.getId())) {
                 hashMap.put(point.getId(), 1);
                 pathWithoutDuplicates.add(point);
@@ -267,11 +295,10 @@ public class GeoJSONDijkstra {
     }
 
     public double getPathLength(LatLngWithTags destination) {
-        System.out.println("Get Path for dest: " + destination.toString());
+//        Log.i("getPathLength", "Get Path for dest: " + destination.toString());
         LinkedList<Vertex> path;
         double distance = 0.0;
         LatLng currentPoint = null;
-//        System.out.println("Target: " + vertices.get(index).toString());
             path = getGraphPath(destination);
             if (path != null) {
                 for (Vertex point : path) {
@@ -284,7 +311,6 @@ public class GeoJSONDijkstra {
                     }
                 }
             } else {
-                System.out.println("Path not found!");
                 return -1.0;
             }
         return distance;

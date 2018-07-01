@@ -1,6 +1,7 @@
 package com.app.ariadne.tumrfmap.listeners;
 
 import android.content.Context;
+import android.util.Log;
 import android.widget.LinearLayout;
 
 import com.app.ariadne.tumrfmap.MapsActivity;
@@ -26,14 +27,17 @@ public class MapClickListener implements GoogleMap.OnMapClickListener {
 
     @Override
     public void onMapClick(LatLng latLng) {
+//        Log.i("OnClick", "Clicked on map");
         double minDistance = 100.0;
         boolean isClickHandled = false;
         //TODO: handle negative levels
         if (mapUIElementsManager.level != null && !mapUIElementsManager.level.equals("")) {
+//            Log.i("OnClick", "mapUIElementsManager.level is defined");
             int levelToShow = Integer.valueOf(mapUIElementsManager.level);
-            if (mapUIElementsManager.routePolylineOptionsInLevels != null) {
-                int currLevel = 0;
-                for (int i = 0; i < mapUIElementsManager.route.getMaxRouteLevel(); i++) {
+            if (mapUIElementsManager.route != null) {
+//                Log.i("OnClick", "mapUIElementsManager.route is defined");
+                int currLevel = mapUIElementsManager.route.getMinRouteLevel();
+                for (int i = mapUIElementsManager.route.getMinRouteLevel(); i <= mapUIElementsManager.route.getMaxRouteLevel(); i++) {
                     ArrayList<PolylineOptions> routeLevelContainer = mapUIElementsManager.route.getRouteHashMapForLevels().get(i);
                     for (PolylineOptions routeLevel : routeLevelContainer) {
                         for (LatLng point : routeLevel.getPoints()) {
@@ -41,13 +45,14 @@ public class MapClickListener implements GoogleMap.OnMapClickListener {
                             if (tmpDistance < minDistance) {
                                 minDistance = tmpDistance;
                                 levelToShow = currLevel;
+//                                Log.i("OnClick", "mindistance: " + minDistance);
                             }
                         }
                     }
                     currLevel++;
                 }
                 if (minDistance < 5.0) {
-                    buttonClickListener.setFloorAsChecked(Math.abs(levelToShow - mapUIElementsManager.sourceLevel));
+                    buttonClickListener.setFloorAsChecked(levelToShow);
                     mapUIElementsManager.addRouteLineFromPolyLineOptions(levelToShow);
                     isClickHandled = true;
                 }

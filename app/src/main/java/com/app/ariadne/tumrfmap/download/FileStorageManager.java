@@ -21,20 +21,20 @@ public class FileStorageManager {
             boolean exists = (new File(path)).exists();
             if (!exists) {
                 new File(path).mkdirs();
-            } else {
-                Log.i(TAG, "Path: " + path + " exists");
+//            } else {
+//                Log.i(TAG, "Path: " + path + " exists");
             }
             if (data != null) {
 
                 // Open output stream
-                Log.i(TAG, "Storing file: " + path + filename);
+//                Log.i(TAG, "Storing file: " + path + filename);
                 FileOutputStream fOut = new FileOutputStream(path + filename, false);
                 data.compress(Bitmap.CompressFormat.PNG, 100, fOut);
                 fOut.flush();
                 fOut.close();
             }
         } catch (IOException e) {
-            Log.i(TAG, "Failed to create path: " + path);
+//            Log.i(TAG, "Failed to create path: " + path);
             e.printStackTrace();
         }
     }

@@ -70,7 +70,7 @@ public class CustomMapTileProvider implements TileProvider {
         byte[] image = readTileImage(x, y, zoom);
         if (image == null) {
             try {
-                Log.i(TAG, "Image was null");
+                //Log.i(TAG, "Image was null");
                 URL tileServerURL = new URL(getUrl(this.level, x, y, zoom));
                 InputStream tileInputStream = tileServerURL.openStream();
                 ByteArrayOutputStream tileOutputStream = new ByteArrayOutputStream();
@@ -83,11 +83,11 @@ public class CustomMapTileProvider implements TileProvider {
                 fileStorageManager.writeToExternalStoragePublic(getDestinationPath(level, x, zoom), getFilename(y), bitmap);
                 return new Tile(TILE_WIDTH, TILE_HEIGHT, tileOutputStream.toByteArray());
             } catch (IOException var8) {
-                Log.i(TAG, "Exception while downloading image: " + var8);
+                //Log.i(TAG, "Exception while downloading image: " + var8);
                 return null;
             }
         } else {
-            Log.i(TAG, "Image was there");
+            //Log.i(TAG, "Image was there");
             return new Tile(TILE_WIDTH, TILE_HEIGHT, image);
         }
     }
@@ -157,10 +157,10 @@ public class CustomMapTileProvider implements TileProvider {
     private String getUrl(String level, int x, int y, int zoom) {
 //        PreferenceManager.setDefaultValues(this.context, R.xml.preferences, false);
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this.context);
-        Log.i("CustomTileProvider", "Loading tile server url...");
+        //Log.i("CustomTileProvider", "Loading tile server url...");
 //        String ipAddress = sharedPref.getString("tile_server_ip", "Could not load tile server url");
 //        String ipAddress = BuildConfig.TILE_SERVER_URL;
-        Log.i("CustomTileProvider", "Tile Server url: " + ipAddress);
+        //Log.i("CustomTileProvider", "Tile Server url: " + ipAddress);
         String lvlStr = String.valueOf(level);
         if (lvlStr.equals("0")) {
 //            lvlStr = "";

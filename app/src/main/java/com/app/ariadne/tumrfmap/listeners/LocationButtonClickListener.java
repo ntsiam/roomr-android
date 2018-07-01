@@ -50,16 +50,16 @@ public class LocationButtonClickListener implements GoogleMap.OnMyLocationButton
         mapLocationListener.setMap(mMap);
         String provider;
         if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-            Log.i(TAG, "Provider: Network Provider");
+            //Log.i(TAG, "Provider: Network Provider");
             provider = LocationManager.NETWORK_PROVIDER;
         } else if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            Log.i(TAG, "Provider: GPS Provider");
+            //Log.i(TAG, "Provider: GPS Provider");
             provider = LocationManager.GPS_PROVIDER;
         } else {
             provider = LocationManager.PASSIVE_PROVIDER;
-            Log.i(TAG, "Provider: Passive Provider");
+            //Log.i(TAG, "Provider: Passive Provider");
         }
-        Log.i(TAG, "onCreate");
+        //Log.i(TAG, "onCreate");
         if (ActivityCompat.checkSelfPermission(this.context, android.Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this.context,
                 android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {

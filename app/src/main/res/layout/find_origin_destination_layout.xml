@@ -104,15 +104,15 @@
 
         <ImageButton
             android:id="@+id/imageButton11"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
             android:layout_alignParentTop="true"
             android:layout_marginTop="32dp"
             android:layout_toEndOf="@+id/starting_point"
             android:background="@android:color/transparent"
             android:onClick="changeOriginDestination"
             android:scaleType="fitXY"
-            android:src="@mipmap/ic_launcher_foreground" />
+            android:src="@drawable/arrows" />
     </RelativeLayout>
 
 </RelativeLayout>

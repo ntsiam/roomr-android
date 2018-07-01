@@ -10,7 +10,7 @@ public class CircleClickListener implements GoogleMap.OnCircleClickListener {
 
     @Override
     public void onCircleClick(Circle circle) {
-        Log.i(TAG, "Clicked on circle: " + circle.getTag());
+        //Log.i(TAG, "Clicked on circle: " + circle.getTag());
 
     }
 }

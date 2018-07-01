@@ -23,6 +23,7 @@ public class FindDestinationActivity extends Activity implements AdapterView.OnI
     ArrayAdapter adapterForDestination;
     ArrayList<String> idsForDestination;
     EditText destination;
+    int returnCode;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,6 +38,7 @@ public class FindDestinationActivity extends Activity implements AdapterView.OnI
 
         // Get the data that was sent
 
+        returnCode = RESULT_OK;
         String previousActivity = activityThatCalled.getExtras().getString("callingActivity");
 //        givenDestinationName = activityThatCalled.getExtras().getString("destination");
 //        AutoCompleteTextView autoCompleteDestination = findViewById(R.id.destination);
@@ -54,7 +56,7 @@ public class FindDestinationActivity extends Activity implements AdapterView.OnI
         idsForDestination = new ArrayList<>(GeoJsonMap.targetPointsIds);
         for (int i = 0; i < idsForDestination.size(); i++) {
             if (idsForDestination.get(i).equals("entrance") || idsForDestination.get(i).equals("Entrance of building")) {
-                Log.i("FindDestinationActivity", idsForDestination.get(i));
+                //Log.i("FindDestinationActivity", idsForDestination.get(i));
                 idsForDestination.remove(i);
             }
         }
@@ -98,16 +100,21 @@ public class FindDestinationActivity extends Activity implements AdapterView.OnI
         // Sends data back to the parent and can use RESULT_CANCELED, RESULT_OK, or any
         // custom values starting at RESULT_FIRST_USER. RESULT_CANCELED is sent if
         // this Activity crashes
-        setResult(RESULT_OK, goingBack);
+        setResult(returnCode, goingBack);
 
         // Close this Activity
         finish();
 
     }
 
+    public void cancelResult(View view) {
+        returnCode = RESULT_CANCELED;
+        onSendDestinationId(view);
+    }
+
     @Override
     public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-        Log.i("SECOND", "Item clicked: " + idsForDestination.get(i));
+        //Log.i("SECOND", "Item clicked: " + idsForDestination.get(i));
         destination.setText(idsForDestination.get(i));
         adapterForDestination.clear();
         onSendDestinationId(view);

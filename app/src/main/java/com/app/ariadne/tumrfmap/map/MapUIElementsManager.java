@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import static com.app.ariadne.tumrfmap.MapsActivity.findLevelFromId;
+import static com.app.ariadne.tumrfmap.MapsActivity.getRoomIdFromBuildingName;
 import static com.app.ariadne.tumrfmap.geojson.GeoJsonHelper.ListToArrayList;
 import static com.app.ariadne.tumrfmap.geojson.GeoJsonMap.findDestinationFromId;
 
@@ -51,7 +52,7 @@ public class MapUIElementsManager {
     private static final String TAG = "MAPUIElements";
     public String level;
     private final int MIN_FLOOR = -4;
-    public static final int MAX_FLOOR = 3;
+    public static final int MAX_FLOOR = 4;
     public String sourceName;
     public String targetName;
     public Circle sourceMarker;
@@ -91,7 +92,7 @@ public class MapUIElementsManager {
 //                levelButton.setChecked(false);
 //            } else {
 //                if (!levelButton.isChecked()) {
-//                    Log.i(TAG, "Entered here");
+//                    //Log.i(TAG, "Entered here");
 //                    level = ""; //no tiles for "0" - ground floor is ""
 //                    if (routePolylineOptionsInLevels != null) {
 //                        addRouteLineFromPolyLineOptions(Integer.MIN_VALUE);
@@ -116,7 +117,7 @@ public class MapUIElementsManager {
 //                ViewGroup.LayoutParams params = descriptionLayout.getLayoutParams();
 //                params.height = 50;
 //                descriptionLayout.setLayoutParams(params);
-//                Log.i(TAG, "clicked on map: " + latLng.toString());
+//                //Log.i(TAG, "clicked on map: " + latLng.toString());
 //                descriptionLayout.setOnClickListener(this);
                 descriptionLayout.setVisibility(LinearLayout.GONE);
                 destinationEditText.setVisibility(EditText.GONE);
@@ -140,7 +141,7 @@ public class MapUIElementsManager {
             buttonClickListener.showDestinationFoundButtons(destinationId);
 
             int level = findLevelFromId(target.getId());
-            Log.i(TAG, "Set floor as checked: " + level);
+            //Log.i(TAG, "Set floor as checked: " + level);
             buttonClickListener.setFloorAsChecked(level);
         }
     }
@@ -175,8 +176,10 @@ public class MapUIElementsManager {
 //            currentIndex++;
 //        }
         if (level != Integer.MIN_VALUE) {
-            for (PolylineOptions polylineOptions : route.getRouteHashMapForLevels().get(level)) {
-                addRouteLine(polylineOptions);
+            if (route.getRouteHashMapForLevels().containsKey(level)) {
+                for (PolylineOptions polylineOptions : route.getRouteHashMapForLevels().get(level)) {
+                    addRouteLine(polylineOptions);
+                }
             }
             routePolylineOptionsGray.clickable(true);
         }
@@ -185,7 +188,7 @@ public class MapUIElementsManager {
     }
 
     private void addPathToPolylineOptionsGray(int index, int currentIndex, PolylineOptions polylineOptions) {
-        routePolylineOptionsGray = new PolylineOptions().width(18).color(Color.GRAY).zIndex(Integer.MAX_VALUE - 2000);
+        routePolylineOptionsGray = new PolylineOptions().width(10).color(Color.GRAY).zIndex(Integer.MAX_VALUE - 2000);
         if (currentIndex != index) {
             addPointsToPolyLineOptionsGray(polylineOptions);
         }
@@ -195,7 +198,7 @@ public class MapUIElementsManager {
 
     private void addPointsToPolyLineOptionsGray(PolylineOptions polylineOptions) {
         for (LatLng point: polylineOptions.getPoints()) {
-//            Log.i(TAG, "addPointsToPolyLineOptionsGray, point: " + point.toString());
+//            //Log.i(TAG, "addPointsToPolyLineOptionsGray, point: " + point.toString());
             routePolylineOptionsGray.add(point);
         }
     }
@@ -233,7 +236,7 @@ public class MapUIElementsManager {
         } else if (sourceLevel > level && destinationLevel < level) {
             index = Math.abs(level - sourceLevel);
         }
-        Log.i(TAG, "Polyline index returned: " + index + ", for level: " + level + ". Levels: " + routePolylineOptionsInLevels.size());
+        //Log.i(TAG, "Polyline index returned: " + index + ", for level: " + level + ". Levels: " + routePolylineOptionsInLevels.size());
         return index;
     }
 
@@ -273,6 +276,7 @@ public class MapUIElementsManager {
         routePolylineOptionsInLevels = null;
         routePolylineOptions = null;
         resetRouteMarkers();
+        route = null;
     }
 
     public void removeDestinationMarker() {
@@ -300,17 +304,17 @@ public class MapUIElementsManager {
     }
 
     public void addDestinationDescription(LatLngWithTags latLngWithTags) {
-        Log.i(TAG, "Find entrance for destination: " + latLngWithTags + ", buildingId: " + latLngWithTags.getBuildingId());
+        //Log.i(TAG, "Find entrance for destination: " + latLngWithTags + ", buildingId: " + latLngWithTags.getBuildingId());
         Entrance entrance = geoJsonMap.findEntranceForDestination(latLngWithTags);
         Activity activity = (MapsActivity) context;
         LinearLayout descriptionLayout = activity.findViewById(R.id.targetDescriptionLayout);
         TextView destinationTextview = activity.findViewById(R.id.findDestination);
         if (entrance != null) {
-            Log.i(TAG, "Entrance found: " + entrance.getAddress());
+            //Log.i(TAG, "Entrance found: " + entrance.getAddress());
             destinationTextview.setText(target.getId());
             descriptionLayout.setVisibility(LinearLayout.VISIBLE);
             TextView descriptionText = activity.findViewById(R.id.targetDescriptionHeader);
-            descriptionText.setText(String.format("%s, %s", target.getId(), entrance.getBuilding()));
+            descriptionText.setText(String.format("%s, %s", getRoomIdFromBuildingName(target.getId()), entrance.getBuilding()));
             TextView descriptionTextBody = activity.findViewById(R.id.targetDescriptionBody);
             descriptionTextBody.setText(String.format("%s, %s, %s", entrance.getAddress(), entrance.getPlz(), entrance.getCity()));
         } else {
@@ -329,34 +333,45 @@ public class MapUIElementsManager {
             routeHandler.post(new Runnable() {
                 public void run() {
                     //back on UI thread...
-                    ArrayList<ArrayList<LatLng>> route = new ArrayList<>();
+                    ArrayList<ArrayList<LatLng>> routeArrayList = new ArrayList<>();
                     if (routePolylineOptions != null && routePolylineOptions.getPoints().size() > 0) {
-                        route.add(ListToArrayList(routePolylineOptions.getPoints()));
+                        routeArrayList.add(ListToArrayList(routePolylineOptions.getPoints()));
 //                                currentLevel = Integer.valueOf(dijkstra.level);
                         moveCameraToStartingPosition(minPoint, maxPoint);
                         removeRouteLine();
                         routeLines = new ArrayList<>();
                         routeLines.add(mMap.addPolyline(routePolylineOptions));
                     }
-//                    System.out.println("Number of points: " + route.get(0).size());
                     removeDestinationMarker();
                     addDestinationMarker(target);
                     addDestinationDescription(target);
                     removeSourceMarker();
                     addSourceCircle();
+                    sourceLevel = route.getSourceLevel();
                     buttonClickListener.setFloorAsChecked(sourceLevel);
 
                     ProgressBar progressBar = ((MapsActivity)(context)).findViewById(R.id.progressBar2);
                     progressBar.setVisibility(ProgressBar.GONE);
-                    addRouteMarkers();
+                    addRouteMarkers(sourceLevel);
                 }
             });
         }
 
     }
 
-    private void addRouteMarkers() {
-//        resetRouteMarkers();
+    public void addRouteMarkers(int level) {
+        resetRouteMarkers();
+        if (route!= null && route.getStairMarkers().containsKey(level)) {
+            ArrayList<MarkerOptions> markerOptions = route.getStairMarkers().get(level);
+            for (MarkerOptions markerOptions1: markerOptions) {
+                Marker stair;
+                stair = mMap.addMarker(markerOptions1);
+                routeMarkers.add(stair);
+            }
+            if (routeMarkers.size() > 0) {
+                routeMarkers.get(0).showInfoWindow();
+            }
+        }
 //        for (int i = 1; i < routePolylineOptionsInLevels.size(); i++) {
 //            Marker stair;
 //            if (sourceLevel < destinationLevel) {
@@ -369,9 +384,6 @@ public class MapUIElementsManager {
 //                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.stairs_down)).snippet("one level").title("Take the stairs down"));
 //            }
 //            routeMarkers.add(stair);
-//        }
-//        if (routeMarkers.size() > 0) {
-//            routeMarkers.get(0).showInfoWindow();
 //        }
     }
 
@@ -406,8 +418,8 @@ public class MapUIElementsManager {
     public void moveCameraToStartingPosition(LatLng minPoint, LatLng maxPoint) {
         LatLngBounds routePosition = new LatLngBounds(
                 minPoint, maxPoint);
-        Log.i(TAG, "Southwest: " + minPoint);
-        Log.i(TAG, "Northeast: " + maxPoint);
+        //Log.i(TAG, "Southwest: " + minPoint);
+        //Log.i(TAG, "Northeast: " + maxPoint);
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(routePosition.getCenter(), 18));
 
 //        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(source.getLatlng(), 18));
