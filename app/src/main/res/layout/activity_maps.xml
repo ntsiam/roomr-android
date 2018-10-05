@@ -8,7 +8,7 @@
     android:background="@android:color/transparent"
     android:onClick="cancelTarget"
     android:orientation="vertical"
-    tools:context="com.app.ariadne.tumrfmap.MapsActivity">
+    tools:context="com.app.ariadne.tumrfmap.com.app.ariadne.tumaps.MapsActivity">
 
     <ViewStub
         android:id="@+id/stub_import"

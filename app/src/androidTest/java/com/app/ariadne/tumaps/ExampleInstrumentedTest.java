@@ -1,4 +1,4 @@
-package com.app.ariadne.tumrfmap;
+package com.app.ariadne.tumaps;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;

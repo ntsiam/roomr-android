@@ -33,7 +33,7 @@
         -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyCWVbGZ6jAT7SPFOKo3UYOLC9lwmwmRT-0" />
+            android:value="AIzaSyB4FCRTE9JwkNhK2eFASDuu1GbSKbFVPRY" />
 
 
 
@@ -50,7 +50,7 @@
         <!--</activity>-->
 
         <activity
-            android:name=".MapsActivity"
+            android:name="com.app.ariadne.tumaps.MapsActivity"
             android:label="@string/title_activity_maps">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -58,11 +58,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".FindDestinationActivity"
+        <activity android:name="com.app.ariadne.tumaps.FindDestinationActivity"
             android:label="Enter Destination"
             android:theme="@style/AppTheme"/>
 
-        <activity android:name=".FindOriginDestinationActivity"
+        <activity android:name="com.app.ariadne.tumaps.FindOriginDestinationActivity"
             android:label="Enter Destination"
             android:theme="@style/AppTheme"/>
 
