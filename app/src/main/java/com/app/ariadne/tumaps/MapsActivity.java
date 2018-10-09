@@ -43,11 +43,9 @@ import java.util.StringTokenizer;
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
-    private MultiAutoCompleteTextView roomDestination;
     private static final String TAG = "MainActivity";
     public static boolean isFirstTime = true;
     TileOverlay tileOverlay;
-    MultiAutoCompleteTextView autoCompleteDestination;
     ArrayList<GeoJSONDijkstra> dijkstra;
     Handler routeHandler = new Handler();
     MapUIElementsManager mapUIElementsManager;
@@ -164,10 +162,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 mMap.getCameraPosition().bearing)));
 
         mMap.setOnCameraIdleListener(buttonClickListener);
-//        mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(MUNICH, 0));
-
-//        geoJsonMap = new GeoJsonMap(mMap);
-//        geoJsonMap.loadIndoorTopology(this);
         dijkstra = new ArrayList<>();
         for (int i = 0; i < GeoJsonMap.routablePathForEachBuilding.size(); i++) {
             dijkstra.add(new GeoJSONDijkstra(GeoJsonMap.routablePathForEachBuilding.get(i)));
@@ -176,11 +170,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         targetPointsIds.remove("Entrance of building");
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
                 android.R.layout.simple_dropdown_item_1line, targetPointsIds);
-//        autoCompleteDestination.setAdapter(adapter);
-//        autoCompleteDestination.setOnItemClickListener(this);
 
         mMap.setPadding(0,150,0,0);
-//        Toast.makeText(this, "Camera position: " + mMap.getCameraPosition(), Toast.LENGTH_SHORT).show();
 
         mMap.setOnMyLocationButtonClickListener(new LocationButtonClickListener(this, mMap));
         mapUIElementsManager = new MapUIElementsManager(this, buttonClickListener, mMap, geoJsonMap);
@@ -189,22 +180,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.setOnMapClickListener(mapClickListener);
         itemClickListener = new ItemClickListener(this, mapUIElementsManager, buttonClickListener);
         requestPermissionToAccessLocation();
-
-//        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-//                != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this,
-//                Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-//            requestPermissionToAccessLocation();
-//            // TODO: Consider calling
-//            //    ActivityCompat#requestPermissions
-//            // here to request the missing permissions, and then overriding
-//            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-//            //                                          int[] grantResults)
-//            // to handle the case where the user grants the permission. See the documentation
-//            // for ActivityCompat#requestPermissions for more details.
-//            Toast.makeText(this, "No permissions!", Toast.LENGTH_SHORT).show();
-//            return;
-//        }
-//        mMap.setMyLocationEnabled(true);
 
     }
 
@@ -336,62 +311,47 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         return buildingName;
     }
 
-    private void handleRouteRequest(final String source, final String targetName) {
-        long unixTime = System.currentTimeMillis();
+    private void handleRouteRequest(final String sourceName, final String targetName) {
+//        long unixTime = System.currentTimeMillis();
         //Log.i("getPath", "HandleRouteRequest, start: " + unixTime);
 
-        if (!source.equals("My Location") && !source.equals(targetName) && !(source.equals("Entrance of building")
-                && targetName.equals("entrance")) && !(targetName.equals("Entrance of building")
-                && source.equals("entrance"))) {
+        if (isRoutableSourceDestination()) {
             //Log.i(TAG, "Source: " + source);
-            if (source.equals("Entrance of building")){
-//                mapUIElementsManager.target = findDestinationFromId(targetName);
-                mapUIElementsManager.source = geoJsonMap.findEntranceForDestination(mapUIElementsManager.target).getEntranceLatLngWithTags();
-            } else {
-                mapUIElementsManager.source = GeoJsonMap.findDestinationFromId(source);
-            }
-            if (targetName.equals("Entrance of building")) {
-                mapUIElementsManager.target = geoJsonMap.findEntranceForDestination(mapUIElementsManager.source).getEntranceLatLngWithTags();
-            } else {
-                mapUIElementsManager.target = GeoJsonMap.findDestinationFromId(targetName);
-            }
-            mapUIElementsManager.sourceLevel = findLevelFromId(source);
-            //Log.i(TAG, "Source level = " + mapUIElementsManager.sourceLevel);
-            mapUIElementsManager.destinationLevel = findLevelFromId(targetName);
+            setSourceAndDestination(sourceName, targetName);
             //Log.i(TAG, "Destination level = " + mapUIElementsManager.destinationLevel);
-            if (mapUIElementsManager.source != null) {
-                if (mapUIElementsManager.target != null) {
-                    mapUIElementsManager.routePolylineOptionsInLevels = null;
-                    mapUIElementsManager.route = dijkstra.get(targetBuildingIndex).getPath(mapUIElementsManager.source);
-                    LatLng minPoint = new LatLng(dijkstra.get(targetBuildingIndex).minRouteLat, dijkstra.get(targetBuildingIndex).minRouteLng);
-                    LatLng maxPoint = new LatLng(dijkstra.get(targetBuildingIndex).maxRouteLat, dijkstra.get(targetBuildingIndex).maxRouteLng);
-                    mapUIElementsManager.handleRoutePolyline(routeHandler, mapUIElementsManager.target, minPoint, maxPoint);
-                } else {
-                    routeHandler.post(new Runnable() {
-                        public void run() {
-                            //back on UI thread...
-
-//                            Looper.prepare();
-//                            Toast.makeText(this, "Destination could not be found", Toast.LENGTH_SHORT).show();
-                            cancelTarget(findViewById(R.id.targetDescriptionLayout));
-                        }
-                    });
-                }
+            if (mapUIElementsManager.source != null && mapUIElementsManager.target != null) {
+                mapUIElementsManager.routePolylineOptionsInLevels = null;
+                mapUIElementsManager.route = dijkstra.get(targetBuildingIndex).getPath(mapUIElementsManager.source);
+                LatLng minPoint = new LatLng(dijkstra.get(targetBuildingIndex).minRouteLat, dijkstra.get(targetBuildingIndex).minRouteLng);
+                LatLng maxPoint = new LatLng(dijkstra.get(targetBuildingIndex).maxRouteLat, dijkstra.get(targetBuildingIndex).maxRouteLng);
+                mapUIElementsManager.handleRoutePolyline(routeHandler, mapUIElementsManager.target, minPoint, maxPoint);
             } else {
-//                Looper.prepare();
                 final View view = findViewById(R.id.targetDescriptionLayout);
                 routeHandler.post(new Runnable() {
                     public void run() {
-
-//                Toast.makeText(this,"Starting point could not be found",Toast.LENGTH_SHORT).
-//
-//                        show();
-
                         cancelTarget(view);
                     }
                 });
             }
         }
+    }
+
+    private void setSourceAndDestination(final String sourceName, final String targetName) {
+        if (sourceName.equals("Entrance of building")){
+//                mapUIElementsManager.target = findDestinationFromId(targetName);
+            mapUIElementsManager.source = geoJsonMap.findEntranceForDestination(mapUIElementsManager.target).getEntranceLatLngWithTags();
+        } else {
+            mapUIElementsManager.source = GeoJsonMap.findDestinationFromId(sourceName);
+        }
+        if (targetName.equals("Entrance of building")) {
+            mapUIElementsManager.target = geoJsonMap.findEntranceForDestination(mapUIElementsManager.source).getEntranceLatLngWithTags();
+        } else {
+            mapUIElementsManager.target = GeoJsonMap.findDestinationFromId(targetName);
+        }
+        mapUIElementsManager.sourceLevel = findLevelFromId(sourceName);
+        //Log.i(TAG, "Source level = " + mapUIElementsManager.sourceLevel);
+        mapUIElementsManager.destinationLevel = findLevelFromId(targetName);
+
     }
 
     private void startAsyncTaskToHandleRouteRequest(final String targetBuildingId) {
@@ -436,34 +396,39 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         //Log.i(TAG, "Return from Activity, resultCode: " + resultCode);
-
         if (resultCode == RESULT_OK) {
             // Get the name of the previous Activity
             String activityWeReturnedFrom = data.getStringExtra("Activity Name");
             if (activityWeReturnedFrom.equals("FindDestinationActivity")) {
                 handleNewDestinationFromFindDestinationActivity(data);
             } else {
-                mapUIElementsManager.sourceName = data.getStringExtra("Starting point");
-                mapUIElementsManager.targetName = data.getStringExtra("Destination");
-                //Log.i(TAG, "Source: " + mapUIElementsManager.sourceName + ", Destination: " + mapUIElementsManager.targetName);
-                buttonClickListener.showDirectionsButtons();
-                if (!mapUIElementsManager.sourceName.equals("My Location") && !mapUIElementsManager.sourceName.equals(mapUIElementsManager.targetName)
-                        && !(mapUIElementsManager.sourceName.contains("ntrance")
-                        && mapUIElementsManager.targetName.contains("ntrance")) && !(mapUIElementsManager.targetName.contains("ntrance")
-                        && mapUIElementsManager.sourceName.contains("ntrance"))) {
-
-                    final String targetBuildingId = getBuildingIdFromRoomName(mapUIElementsManager.targetName);
-                    final String sourceBuildingId = getBuildingIdFromRoomName(mapUIElementsManager.sourceName);
-
-                    if (targetBuildingId.equals(sourceBuildingId) || mapUIElementsManager.sourceName.equals("Entrance of building")) {
-                        startAsyncTaskToHandleRouteRequest(targetBuildingId);
-                    } else {
-                        Toast.makeText(this, "Inter-building routing is not supported yet", Toast.LENGTH_LONG).show();
-                    }
-                }
-
+                handleSourceDestinationFromActivity(data);
             }
         }
+    }
+
+    private void handleSourceDestinationFromActivity(Intent data) {
+        mapUIElementsManager.sourceName = data.getStringExtra("Starting point");
+        mapUIElementsManager.targetName = data.getStringExtra("Destination");
+        //Log.i(TAG, "Source: " + mapUIElementsManager.sourceName + ", Destination: " + mapUIElementsManager.targetName);
+        buttonClickListener.showDirectionsButtons();
+        if (isRoutableSourceDestination()) {
+            final String targetBuildingId = getBuildingIdFromRoomName(mapUIElementsManager.targetName);
+            final String sourceBuildingId = getBuildingIdFromRoomName(mapUIElementsManager.sourceName);
+
+            if (targetBuildingId.equals(sourceBuildingId) || mapUIElementsManager.sourceName.equals("Entrance of building")) {
+                startAsyncTaskToHandleRouteRequest(targetBuildingId);
+            } else {
+                Toast.makeText(this, "Inter-building routing is not supported yet", Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+    private boolean isRoutableSourceDestination() {
+        return !(mapUIElementsManager.sourceName.equals("My Location") || mapUIElementsManager.sourceName.equals(mapUIElementsManager.targetName)
+                || mapUIElementsManager.sourceName.contains("ntrance")
+                && mapUIElementsManager.targetName.contains("ntrance") || mapUIElementsManager.targetName.contains("ntrance")
+                && mapUIElementsManager.sourceName.contains("ntrance"));
     }
 
     /**
