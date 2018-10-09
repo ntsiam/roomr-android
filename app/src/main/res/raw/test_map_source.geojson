@@ -1,0 +1,71 @@
+
+{
+    "type": "FeatureCollection",
+    "generator": "JOSM",
+    "features": [
+        {
+            "type": "Feature",
+            "properties": {
+                "building_id": "test",
+                "address": "Bolzmannstraße 3",
+                "city": "Garching bei München",
+                "level": "0",
+                "id": "entrance",
+                "highway": "footway",
+                "building": "TUM Department of Informatics And Mathematics",
+                "plz": "85748"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    11.67156816940,
+                    48.26279796495
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "level": "0",
+                "highway": "footway",
+                "building_id": "test"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        11.67156816940,
+                        48.26279796495
+                    ],
+                    [
+                        11.67211352654,
+                        48.26208285667
+                    ],
+                    [
+                        11.67161774732,
+                        48.26157677401
+                    ],
+                    [
+                        11.67069229279,
+                        48.26143374974
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "building_id": "test",
+                "level": "0",
+                "id": "00.01.10"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    11.67069229279,
+                    48.26143374974
+                ]
+            }
+        }
+    ]
+}

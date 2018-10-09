@@ -20,7 +20,6 @@ public class ExampleInstrumentedTest {
     public void useAppContext() throws Exception {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getTargetContext();
-
-        assertEquals("com.app.ariadne.tumrfmap", appContext.getPackageName());
+        assertEquals("com.app.ariadne.tumaps", appContext.getPackageName());
     }
 }
