@@ -9,10 +9,8 @@ import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
-import android.widget.MultiAutoCompleteTextView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
@@ -22,6 +20,7 @@ import com.app.ariadne.tumaps.listeners.ButtonClickListener;
 import com.app.ariadne.tumaps.listeners.CircleClickListener;
 import com.app.ariadne.tumaps.listeners.LocationButtonClickListener;
 import com.app.ariadne.tumaps.listeners.MapClickListener;
+import com.app.ariadne.tumaps.map.MapManager;
 import com.app.ariadne.tumaps.map.MapUIElementsManager;
 import com.app.ariadne.tumrfmap.R;
 import com.app.ariadne.tumaps.listeners.ItemClickListener;
@@ -55,6 +54,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     GeoJsonMap geoJsonMap;
     String previousDestination;
     int targetBuildingIndex;
+    MapManager mapManager;
 
     public static final int MY_PERMISSIONS_REQUEST_FINE_LOCATION = 1;
 
@@ -146,39 +146,42 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
-        buttonClickListener = new ButtonClickListener(this);
-        mMap = googleMap;
-        mMap.setMinZoomPreference(10.0f);
-        LatLngBounds MUNICH = new LatLngBounds(
-                new LatLng(47.8173, 11.063), new LatLng(48.5361, 12.062));
-        mMap.setLatLngBoundsForCameraTarget(MUNICH);
-        mMap.setOnCircleClickListener(new CircleClickListener());
-        mMap.setIndoorEnabled(false);
 
-//        LatLng munich = new LatLng(48.137, 11.574);
-        LatLng garching = new LatLng(48.262534, 11.667992);
-        //mMap.moveCamera(CameraUpdateFactory.newLatLng(munich));
-        mMap.moveCamera(CameraUpdateFactory.newCameraPosition(new CameraPosition(garching, 14, mMap.getCameraPosition().tilt,
-                mMap.getCameraPosition().bearing)));
-
-        mMap.setOnCameraIdleListener(buttonClickListener);
-        dijkstra = new ArrayList<>();
-        for (int i = 0; i < GeoJsonMap.routablePathForEachBuilding.size(); i++) {
-            dijkstra.add(new GeoJSONDijkstra(GeoJsonMap.routablePathForEachBuilding.get(i)));
-        }
-        ArrayList<String> targetPointsIds = GeoJsonMap.targetPointsIds;
-        targetPointsIds.remove("Entrance of building");
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
-                android.R.layout.simple_dropdown_item_1line, targetPointsIds);
-
-        mMap.setPadding(0,150,0,0);
-
-        mMap.setOnMyLocationButtonClickListener(new LocationButtonClickListener(this, mMap));
-        mapUIElementsManager = new MapUIElementsManager(this, buttonClickListener, mMap, geoJsonMap);
-        buttonClickListener.setMapUIElementsManager(mapUIElementsManager);
-        mapClickListener = new MapClickListener(this, buttonClickListener, mapUIElementsManager);
-        mMap.setOnMapClickListener(mapClickListener);
-        itemClickListener = new ItemClickListener(this, mapUIElementsManager, buttonClickListener);
+        mapManager = new MapManager(this, mMap);
+        mapManager.setUpMap(googleMap);
+//        buttonClickListener = new ButtonClickListener(this);
+//        mMap = googleMap;
+//        mMap.setMinZoomPreference(10.0f);
+//        LatLngBounds MUNICH = new LatLngBounds(
+//                new LatLng(47.8173, 11.063), new LatLng(48.5361, 12.062));
+//        mMap.setLatLngBoundsForCameraTarget(MUNICH);
+//        mMap.setOnCircleClickListener(new CircleClickListener());
+//        mMap.setIndoorEnabled(false);
+//
+////        LatLng munich = new LatLng(48.137, 11.574);
+//        LatLng garching = new LatLng(48.262534, 11.667992);
+//        //mMap.moveCamera(CameraUpdateFactory.newLatLng(munich));
+//        mMap.moveCamera(CameraUpdateFactory.newCameraPosition(new CameraPosition(garching, 14, mMap.getCameraPosition().tilt,
+//                mMap.getCameraPosition().bearing)));
+//
+//        mMap.setOnCameraIdleListener(buttonClickListener);
+//        dijkstra = new ArrayList<>();
+//        for (int i = 0; i < GeoJsonMap.routablePathForEachBuilding.size(); i++) {
+//            dijkstra.add(new GeoJSONDijkstra(GeoJsonMap.routablePathForEachBuilding.get(i)));
+//        }
+//        ArrayList<String> targetPointsIds = GeoJsonMap.targetPointsIds;
+//        targetPointsIds.remove("Entrance of building");
+//        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
+//                android.R.layout.simple_dropdown_item_1line, targetPointsIds);
+//
+//        mMap.setPadding(0,150,0,0);
+//
+//        mMap.setOnMyLocationButtonClickListener(new LocationButtonClickListener(this, mMap));
+//        mapUIElementsManager = new MapUIElementsManager(this, buttonClickListener, mMap, geoJsonMap);
+//        buttonClickListener.setMapUIElementsManager(mapUIElementsManager);
+//        mapClickListener = new MapClickListener(this, buttonClickListener, mapUIElementsManager);
+//        mMap.setOnMapClickListener(mapClickListener);
+//        itemClickListener = new ItemClickListener(this, mapUIElementsManager, buttonClickListener);
         requestPermissionToAccessLocation();
 
     }
@@ -214,10 +217,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             previousDestination = mapUIElementsManager.target.getId();
             getNameScreenIntent.putExtra("destination", mapUIElementsManager.target.getId());
         }
-        if (mapUIElementsManager.source != null && mapUIElementsManager.target != null) {
-            Log.i(TAG, "Source building: " + getBuildingIdFromRoomName(mapUIElementsManager.source.getId()) + ", Destination building: " +
-                    getBuildingIdFromRoomName(mapUIElementsManager.target.getId()));
-        }
         if (mapUIElementsManager.source != null && mapUIElementsManager.target != null &&
                 getBuildingIdFromRoomName(mapUIElementsManager.source.getId()).equals(getBuildingIdFromRoomName(mapUIElementsManager.target.getId()))) {
             getNameScreenIntent.putExtra("source", mapUIElementsManager.source.getId());
@@ -227,55 +226,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
 
-    private static boolean isGarchingMIId(String id) {
-        StringTokenizer multiTokenizer = new StringTokenizer(id, ".");
-        int index = 0;
-        while (multiTokenizer.hasMoreTokens()) {
-            multiTokenizer.nextToken();
-
-            index++;
-            //Log.i(TAG, "MORE tokens");
-        }
-        return index == 3;
-    }
-
-    public static boolean isInteger(String s) {
-        try {
-            Integer.parseInt(s);
-        } catch(NumberFormatException e) {
-            return false;
-        } catch(NullPointerException e) {
-            return false;
-        }
-        // only got here if we didn't return false
-        return true;
-    }
-
-    private static boolean isMWId(String name) {
-        String id = getRoomIdFromBuildingName(name);
-        StringTokenizer multiTokenizer = new StringTokenizer(id, ".");
-        int index = 0;
-        while (multiTokenizer.hasMoreTokens()) {
-            multiTokenizer.nextToken();
-
-            index++;
-            //Log.i(TAG, "MORE tokens");
-        }
-        return index == 1 && isInteger(id);
-    }
-
-    public static int findLevelFromId(String id) {
-        int level = 0;
-        if (isGarchingMIId(id)) {
-            level = Integer.valueOf(id.substring(1,2));
-            //Log.i(TAG, "id: " + id + " is from Garching MI, level: " + level);
-        } else if (isMWId(id)) {
-            level = Integer.valueOf(id.substring(0,1));
-        } else {
-            //Log.i(TAG, "id: " + id + " is not from Garching MI");
-        }
-        return level;
-    }
+//    private static boolean isGarchingMIId(String id) {
+//        StringTokenizer multiTokenizer = new StringTokenizer(id, ".");
+//        int index = 0;
+//        while (multiTokenizer.hasMoreTokens()) {
+//            multiTokenizer.nextToken();
+//
+//            index++;
+//            //Log.i(TAG, "MORE tokens");
+//        }
+//        return index == 3;
+//    }
 
     public static String getRoomIdFromBuildingName(String name) {
         StringTokenizer multiTokenizer = new StringTokenizer(name, ",");
@@ -290,7 +251,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         return nameParts.get(0);
     }
 
-    public String getBuildingIdFromRoomName(String name) {
+    public static String getBuildingIdFromRoomName(String name) {
         StringTokenizer multiTokenizer = new StringTokenizer(name, ",");
         int index = 0;
         String buildingName = "";
@@ -309,6 +270,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             return id;
         }
         return buildingName;
+    }
+
+
+
+    public static boolean isInteger(String s) {
+        try {
+            Integer.parseInt(s);
+        } catch(NumberFormatException e) {
+            return false;
+        } catch(NullPointerException e) {
+            return false;
+        }
+        // only got here if we didn't return false
+        return true;
     }
 
     private void handleRouteRequest(final String sourceName, final String targetName) {
@@ -348,9 +323,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         } else {
             mapUIElementsManager.target = GeoJsonMap.findDestinationFromId(targetName);
         }
-        mapUIElementsManager.sourceLevel = findLevelFromId(sourceName);
+        mapUIElementsManager.sourceLevel = MapsConfiguration.getInstance().getLevelFromId(sourceName);
         //Log.i(TAG, "Source level = " + mapUIElementsManager.sourceLevel);
-        mapUIElementsManager.destinationLevel = findLevelFromId(targetName);
+        mapUIElementsManager.destinationLevel = MapsConfiguration.getInstance().getLevelFromId(targetName);
 
     }
 

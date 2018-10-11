@@ -8,8 +8,8 @@ import android.widget.ImageButton;
 import android.widget.ScrollView;
 import android.widget.ToggleButton;
 
+import com.app.ariadne.tumaps.MapsConfiguration;
 import com.app.ariadne.tumaps.geojson.IndoorBuildingBoundsAndFloors;
-import com.app.ariadne.tumaps.map.MapManager;
 import com.app.ariadne.tumaps.map.MapUIElementsManager;
 import com.app.ariadne.tumaps.MapsActivity;
 import com.app.ariadne.tumrfmap.R;
@@ -20,7 +20,6 @@ import com.google.android.gms.maps.model.LatLng;
 import java.util.ArrayList;
 
 public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCameraIdleListener {
-    MapManager mapManager;
     MapUIElementsManager mapUIElementsManager;
     Context context;
     ToggleButton level4;
@@ -38,20 +37,8 @@ public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCa
     EditText destinationEditText;
     //Maschinenwesen min: 48.264547, 11.667344, max: 48.266825, 11.671324
     //Main campus: 48.147561, 11.565581, 48.151462, 11.570093
-    private static final BoundingBox MASCHINENWESEN_BB = new BoundingBox(new LatLng(48.266825, 11.671324), new LatLng(48.264547, 11.667344));
-    private static final BoundingBox MAIN_CAMPUS_BB = new BoundingBox(new LatLng(48.151462, 11.570093), new LatLng(48.147561, 11.565581));
-    private static final BoundingBox MUENCHNER_FREIHEIT_BB = new BoundingBox(new LatLng(48.162697, 11.587385), new LatLng(48.160468, 11.584937));
-    private static final BoundingBox HAUPTBAHNHOF_BB = new BoundingBox(new LatLng(48.143000, 11.565000), new LatLng(48.137300, 11.554600));
-    private static final BoundingBox GARCHING_MI_BB = new BoundingBox(new LatLng(48.2636, 11.6705), new LatLng(48.2613, 11.6653));
-    private static final IndoorBuildingBoundsAndFloors MAIN_CAMPUS = new IndoorBuildingBoundsAndFloors(MAIN_CAMPUS_BB, 0, 5);
-    private static final IndoorBuildingBoundsAndFloors MASCHINENWESEN = new IndoorBuildingBoundsAndFloors(MASCHINENWESEN_BB, 0, 3);
-    private static final IndoorBuildingBoundsAndFloors MUENCHNER_FREIHEIT = new IndoorBuildingBoundsAndFloors(MUENCHNER_FREIHEIT_BB, -2, 0);
-    private static final IndoorBuildingBoundsAndFloors HAUPTBAHNHOF = new IndoorBuildingBoundsAndFloors(HAUPTBAHNHOF_BB, -4, 0);
-    private static final IndoorBuildingBoundsAndFloors GARCHING_MI = new IndoorBuildingBoundsAndFloors(GARCHING_MI_BB, 0, 3);
-    private static final IndoorBuildingBoundsAndFloors[] BOUNDS_FOR_INDOOR_BUTTONS = new IndoorBuildingBoundsAndFloors[] {
-            MUENCHNER_FREIHEIT, HAUPTBAHNHOF, GARCHING_MI, MAIN_CAMPUS, MASCHINENWESEN
-    };
 
+    private static IndoorBuildingBoundsAndFloors[] BOUNDS_FOR_INDOOR_BUTTONS;
 
     private static final String TAG = "ButtonClickListener";
 
@@ -65,7 +52,7 @@ public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCa
         directionsButton.setOnClickListener(this);
         revertButton.setOnClickListener(this);
         destinationEditText = mapsActivity.findViewById(R.id.findDestination);
-
+        BOUNDS_FOR_INDOOR_BUTTONS = MapsConfiguration.getInstance().getBoundsForIndoorButtons();
     }
 
     public void setMapUIElementsManager(MapUIElementsManager mapUIElementsManager) {
