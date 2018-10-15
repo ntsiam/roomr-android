@@ -1,6 +1,7 @@
 package com.app.ariadne.tumaps.listeners;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -10,6 +11,7 @@ import android.widget.ToggleButton;
 
 import com.app.ariadne.tumaps.MapsConfiguration;
 import com.app.ariadne.tumaps.geojson.IndoorBuildingBoundsAndFloors;
+import com.app.ariadne.tumaps.map.MapManager;
 import com.app.ariadne.tumaps.map.MapUIElementsManager;
 import com.app.ariadne.tumaps.MapsActivity;
 import com.app.ariadne.tumrfmap.R;
@@ -35,6 +37,7 @@ public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCa
     Button directionsButton;
     ImageButton revertButton;
     EditText destinationEditText;
+    MapManager mapManager;
     //Maschinenwesen min: 48.264547, 11.667344, max: 48.266825, 11.671324
     //Main campus: 48.147561, 11.565581, 48.151462, 11.570093
 
@@ -42,8 +45,8 @@ public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCa
 
     private static final String TAG = "ButtonClickListener";
 
-    public ButtonClickListener(Context context) {
-//        this.mapManager = mapManager;
+    public ButtonClickListener(Context context, MapManager mapManager) {
+        this.mapManager = mapManager;
         this.context = context;
         initFloorButtonList();
         MapsActivity mapsActivity = (MapsActivity)context;
@@ -62,7 +65,7 @@ public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCa
     public void setFloorAsChecked(int level) {
         int indexOfLevelInButtonList = MapUIElementsManager.MAX_FLOOR - level;
         floorButtonList.get(indexOfLevelInButtonList).setChecked(true);
-        ((MapsActivity)(context)).addTileProvider(String.valueOf(level));
+        mapManager.addTileProvider(String.valueOf(level));
         clickFloor(level);
     }
 
@@ -71,7 +74,7 @@ public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCa
         level = String.valueOf(requestedLevel);
         //Log.i(TAG, "Requested level: " + level);
         level = level.replace("-", "n");
-        //Log.i(TAG, "Requested level after replace: " + level);
+        Log.i(TAG, "Requested level after replace: " + level);
         int indexOfLevelInButtonList = MapUIElementsManager.MAX_FLOOR - requestedLevel;
         int currentIndexInButtonList = 0;
         for (ToggleButton levelButton: floorButtonList) {
@@ -97,6 +100,7 @@ public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCa
         if (!level.equals("")) {
             mapUIElementsManager.addRouteMarkers(requestedLevel);
         }
+        mapManager.addTileProvider(level);
     }
 
     private void initFloorButtonList() {
@@ -207,7 +211,7 @@ public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCa
 //            descriptionLayout.setLayoutParams(params);
 
         }
-        ((MapsActivity)(context)).addTileProvider(mapUIElementsManager.level);
+        mapManager.addTileProvider(mapUIElementsManager.level);
 
     }
 

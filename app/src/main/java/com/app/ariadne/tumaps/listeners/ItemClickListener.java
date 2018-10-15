@@ -6,6 +6,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 
 import com.app.ariadne.tumaps.MapsActivity;
+import com.app.ariadne.tumaps.MapsConfiguration;
 import com.app.ariadne.tumaps.geojson.LatLngWithTags;
 import com.app.ariadne.tumaps.map.MapUIElementsManager;
 
@@ -30,7 +31,7 @@ public class ItemClickListener implements AdapterView.OnItemClickListener {
         mapUIElementsManager.addMarkerAndZoomCameraOnTarget(destination);
         buttonClickListener.showDestinationFoundButtons(destination.getId());
         mapUIElementsManager.addDestinationDescription(destination);
-        int level = MapsActivity.findLevelFromId(mapUIElementsManager.target.getId());
+        int level = MapsConfiguration.getInstance().getLevelFromId(mapUIElementsManager.target.getId());
         //Log.i(TAG, "Set floor as checked: " + level);
         buttonClickListener.setFloorAsChecked(level);
 

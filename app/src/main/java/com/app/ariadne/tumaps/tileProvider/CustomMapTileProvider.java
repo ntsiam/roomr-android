@@ -6,8 +6,8 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Environment;
 import android.preference.PreferenceManager;
+import android.util.Log;
 
-import com.app.ariadne.tumaps.download.FileDownloader;
 import com.app.ariadne.tumaps.download.FileStorageManager;
 import com.app.ariadne.tumrfmap.BuildConfig;
 import com.google.android.gms.maps.model.Tile;
@@ -29,26 +29,15 @@ public class CustomMapTileProvider implements TileProvider {
 //    private AssetManager mAssets;
     private String level;
     Context context;
-    FileDownloader fileDownloader;
     String path;
     SharedPreferences sharedPref;
     String ipAddress;
 
-
-
-    //    public CustomMapTileProvider(AssetManager assets, Context context) {
-//        mAssets = assets;
-//        this.context = context;
-//        this.fileDownloader = new FileDownloader(context);
-//        String packageName = this.context.getPackageName();
-//        path = Environment.getExternalStorageDirectory().getAbsolutePath()+ "/Android/data/" + packageName + "/files/";
-//
-//    }
     public CustomMapTileProvider(Context context) {
         this.context = context;
-        this.fileDownloader = new FileDownloader(context);
         String packageName = this.context.getPackageName();
         path = Environment.getExternalStorageDirectory().getAbsolutePath()+ "/Android/data/" + packageName + "/files/";
+//        path = Environment.getDataDirectory().getAbsolutePath()+ "/Android/data/" + packageName + "/files/";
         ipAddress = BuildConfig.TILE_SERVER_URL;
         sharedPref = PreferenceManager.getDefaultSharedPreferences(this.context);
 
@@ -87,7 +76,7 @@ public class CustomMapTileProvider implements TileProvider {
 
 
     /**
-     * This method was copied from UrlTileProvider, no idea what happens here
+     * This method was copied from UrlTileProvider class, no idea what happens here
      */
     private static long zza(InputStream var0, OutputStream var1) throws IOException {
         byte[] var2 = new byte[4096];
@@ -106,7 +95,7 @@ public class CustomMapTileProvider implements TileProvider {
         InputStream in = null;
         ByteArrayOutputStream buffer = null;
         try {
-            File file = new File(getDestinationPath(level, x, zoom),getFilename(y));
+            File file = new File(getDestinationPath(level, x, zoom), getFilename(y));
             in =  new FileInputStream(file); //mAssets.open(getTileFilename(level, x, y, zoom));
             return readTileFromFile(buffer, in);
 
@@ -148,19 +137,19 @@ public class CustomMapTileProvider implements TileProvider {
     }
 
     private String getUrl(String level, int x, int y, int zoom) {
-//        PreferenceManager.setDefaultValues(this.context, R.xml.preferences, false);
+        //PreferenceManager.setDefaultValues(this.context, R.xml.preferences, false);
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this.context);
-        //Log.i("CustomTileProvider", "Loading tile server url...");
-//        String ipAddress = sharedPref.getString("tile_server_ip", "Could not load tile server url");
-//        String ipAddress = BuildConfig.TILE_SERVER_URL;
+        //String ipAddress = sharedPref.getString("tile_server_ip", "Could not load tile server url");
+        //String ipAddress = BuildConfig.TILE_SERVER_URL;
         //Log.i("CustomTileProvider", "Tile Server url: " + ipAddress);
         String lvlStr = String.valueOf(level);
         if (lvlStr.equals("0")) {
-//            lvlStr = "";
+            //lvlStr = "";
         }
         String s = String.format("http://" + ipAddress + "/hot" + lvlStr + "/%d/%d/%d.png",
                 zoom, x, y);
 
+        Log.i(TAG, "Tile server url: " + s);
         return s;
     }
 

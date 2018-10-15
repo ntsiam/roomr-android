@@ -11,7 +11,7 @@ android {
         versionName "1.4"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
-        buildConfigField 'String', 'TILE_SERVER_URL', '"ec2-18-188-248-182.us-east-2.compute.amazonaws.com/"'
+        buildConfigField 'String', 'TILE_SERVER_URL', '"ec2-18-188-248-182.us-east-2.compute.amazonaws.com"'
     }
     buildTypes {
         release {

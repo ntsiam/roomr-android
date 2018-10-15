@@ -27,7 +27,7 @@ public class FileStorageManager {
             if (data != null) {
 
                 // Open output stream
-//                Log.i(TAG, "Storing file: " + path + filename);
+                Log.i(TAG, "Storing file: " + path + filename);
                 FileOutputStream fOut = new FileOutputStream(path + filename, false);
                 data.compress(Bitmap.CompressFormat.PNG, 100, fOut);
                 fOut.flush();

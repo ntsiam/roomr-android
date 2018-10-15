@@ -11,6 +11,7 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.app.ariadne.tumaps.MapsConfiguration;
 import com.app.ariadne.tumaps.geojson.GeoJsonHelper;
 import com.app.ariadne.tumaps.MapsActivity;
 import com.app.ariadne.tumrfmap.R;
@@ -35,7 +36,6 @@ import com.google.android.gms.maps.model.PolylineOptions;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import static com.app.ariadne.tumaps.MapsActivity.findLevelFromId;
 import static com.app.ariadne.tumaps.MapsActivity.getRoomIdFromBuildingName;
 import static com.app.ariadne.tumaps.geojson.GeoJsonMap.findDestinationFromId;
 
@@ -80,30 +80,45 @@ public class MapUIElementsManager {
         cancelButton = ((MapsActivity) context).findViewById(R.id.cancel_button);
     }
 
-//    public void managePolylineOptions(int requestedLevel) {
-//        int indexOfLevelInButtonList = MAX_FLOOR - requestedLevel;
-//        int currentIndexInButtonList = 0;
-//        for (ToggleButton levelButton: buttonClickListener.floorButtonList) {
-//            if (currentIndexInButtonList != indexOfLevelInButtonList) {
-//                levelButton.setChecked(false);
-//            } else {
-//                if (!levelButton.isChecked()) {
-//                    //Log.i(TAG, "Entered here");
-//                    level = ""; //no tiles for "0" - ground floor is ""
-//                    if (routePolylineOptionsInLevels != null) {
-//                        addRouteLineFromPolyLineOptions(Integer.MIN_VALUE);
-//                    }
-//                } else {
-//                    if (routePolylineOptionsInLevels != null) {
-//                        int polyLineIndex = findPolyLineIndex(requestedLevel);
-//                        addRouteLineFromPolyLineOptions(polyLineIndex);
-//                    }
-//                }
-//            }
-//            currentIndexInButtonList++;
-//        }
-//
-//    }
+    public LatLngWithTags getSource() {
+        return source;
+    }
+
+    public LatLngWithTags getTarget() {
+        return target;
+    }
+
+    public boolean isRoutableSourceDestination() {
+        return !(sourceName.equals("My Location") || sourceName.equals(targetName) || sourceName.contains("ntrance")
+                && targetName.contains("ntrance") || targetName.contains("ntrance") && sourceName.contains("ntrance"));
+    }
+
+    public boolean areSourceAndDestinationNotNull() {
+        return source != null && target != null;
+    }
+
+    public void setRoutePathOnMap(Route routePath, Handler routeHandler, LatLng minPoint, LatLng maxPoint) {
+        routePolylineOptionsInLevels = null;
+        route = routePath;
+        handleRoutePolyline(routeHandler, minPoint, maxPoint);
+    }
+
+    public void setSourceAndDestination(final String sourceName, final String targetName) {
+        if (sourceName.equals("Entrance of building")){
+//                mapUIElementsManager.target = findDestinationFromId(targetName);
+            source = geoJsonMap.findEntranceForDestination(target).getEntranceLatLngWithTags();
+        } else {
+            source = GeoJsonMap.findDestinationFromId(sourceName);
+        }
+        if (targetName.equals("Entrance of building")) {
+            target = geoJsonMap.findEntranceForDestination(source).getEntranceLatLngWithTags();
+        } else {
+            target = GeoJsonMap.findDestinationFromId(targetName);
+        }
+        sourceLevel = MapsConfiguration.getInstance().getLevelFromId(sourceName);
+        //Log.i(TAG, "Source level = " + mapUIElementsManager.sourceLevel);
+        destinationLevel = MapsConfiguration.getInstance().getLevelFromId(targetName);
+    }
 
     public void toggleMapUIElementVisibility() {
         if (areMapElementsVisible) {
@@ -136,7 +151,7 @@ public class MapUIElementsManager {
             addDestinationDescription(target);
             buttonClickListener.showDestinationFoundButtons(destinationId);
 
-            int level = findLevelFromId(target.getId());
+            int level = MapsConfiguration.getInstance().getLevelFromId(target.getId());
             //Log.i(TAG, "Set floor as checked: " + level);
             buttonClickListener.setFloorAsChecked(level);
         }
@@ -263,7 +278,7 @@ public class MapUIElementsManager {
 
     }
 
-    public void cancelTarget() {
+    public void removeAllDestinationElementsFromMap() {
         target = null;
         removeDestinationMarker();
         removeDestinationDescription();
@@ -320,7 +335,7 @@ public class MapUIElementsManager {
         }
     }
 
-    public void handleRoutePolyline(Handler routeHandler, final LatLngWithTags target, final LatLng minPoint, final LatLng maxPoint) {
+    public void handleRoutePolyline(Handler routeHandler, final LatLng minPoint, final LatLng maxPoint) {
 //        if (routePolylineOptionsInLevels != null && routePolylineOptionsInLevels.size() > 0) {
         if (route != null && route.getRouteHashMapForLevels()!= null && route.getRouteHashMapForLevels().get(route.getSourceLevel())
                 != null && route.getRouteHashMapForLevels().get(route.getSourceLevel()).size() > 0) {

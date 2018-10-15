@@ -18,6 +18,7 @@ import org.json.JSONException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.StringTokenizer;
 
 //import static com.roomr.ariadne.tumnavigator.MapLocationListener.gpsLocation;
 
@@ -127,7 +128,7 @@ public class GeoJsonMap {
      * This function parses each feature in the geojson and stores it to the corresponding ArrayList object:
      * CorridorsInLevels for a corridor
      * StepsInLevels for a stair
-     * TargetPoints Tagged for a point
+     * TargetPoints Tagged for a point that can be the source or destination of a routing request
      * @param indoorPathLayer
      */
     private void processIndoorPathFeatures(GeoJsonLayer indoorPathLayer) {
@@ -310,6 +311,41 @@ public class GeoJsonMap {
             return null;
         }
     }
+
+    public static boolean isSourceAndDestinationInTheSameBuilding(LatLngWithTags source, LatLngWithTags destination) {
+        return getBuildingIdFromRoomName(source.getId()).equals(getBuildingIdFromRoomName(destination.getId()));
+    }
+
+    public static String getRoomIdFromBuildingName(String name) {
+        StringTokenizer multiTokenizer = new StringTokenizer(name, ",");
+        int index = 0;
+        ArrayList<String> nameParts = new ArrayList<>();
+        while (multiTokenizer.hasMoreTokens()) {
+            nameParts.add(multiTokenizer.nextToken());
+            index++;
+        }
+        return nameParts.get(0);
+    }
+
+    public static String getBuildingIdFromRoomName(String name) {
+        StringTokenizer multiTokenizer = new StringTokenizer(name, ",");
+        int index = 0;
+        String buildingName = "";
+        ArrayList<String> nameParts = new ArrayList<>();
+        while (multiTokenizer.hasMoreTokens()) {
+            nameParts.add(multiTokenizer.nextToken());
+            index++;
+        }
+        //Log.i(TAG, "number of tokens: " + index);
+        if (index > 1) {
+            buildingName = nameParts.get(1).substring(1);
+            //Log.i(TAG, "buildingName: " + buildingName);
+            return GeoJsonMap.buildingNameToId.get(buildingName);
+        }
+        return buildingName;
+    }
+
+
 
     /**
      * entranceHashMap maps the building id to the entrance details of the building. Each building is (wrongly) assumed to have one entrance though.

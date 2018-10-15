@@ -1,14 +1,14 @@
 package com.app.ariadne.tumaps.map;
 
+import android.Manifest;
 import android.content.Context;
-import android.util.Log;
+import android.content.pm.PackageManager;
+import android.support.v4.app.ActivityCompat;
 import android.widget.ArrayAdapter;
 
 import com.app.ariadne.tumaps.MapsConfiguration;
-import com.app.ariadne.tumaps.listeners.ItemClickListener;
 import com.app.ariadne.tumaps.listeners.LocationButtonClickListener;
 import com.app.ariadne.tumaps.listeners.MapClickListener;
-import com.app.ariadne.tumaps.geojson.GeoJSONDijkstra;
 import com.app.ariadne.tumaps.geojson.GeoJsonMap;
 import com.app.ariadne.tumaps.listeners.ButtonClickListener;
 import com.app.ariadne.tumaps.listeners.CircleClickListener;
@@ -25,31 +25,32 @@ import java.util.ArrayList;
 
 
 public class MapManager {
-    private GoogleMap mMap;
+    public GoogleMap mMap;
     private Context context;
-    private GoogleMap.OnMapClickListener onMapClickListener;
-    private GoogleMap.OnCircleClickListener onCircleClickListener;
-    MapClickListener mapClickListener;
-    ItemClickListener itemClickListener;
-    private ButtonClickListener buttonClickListener;
     private MapUIElementsManager mapUIElementsManager;
-    public GeoJsonMap geoJsonMap;
-    public ArrayList<GeoJSONDijkstra> dijkstra;
     TileOverlay tileOverlay;
     private static final String TAG = "MapManager";
     MapsConfiguration mapsConfigurationInstance;
 
-    public MapManager(Context context, GoogleMap mMap) {
+    public MapManager(Context context) {
         this.context = context;
-        this.mMap = mMap;
-        this.onMapClickListener = new MapClickListener(context, buttonClickListener, mapUIElementsManager);
-        this.onCircleClickListener = new CircleClickListener();
         mapsConfigurationInstance = MapsConfiguration.getInstance();
 
     }
 
+    public void setOnMapClickListener(MapClickListener mapClickListener) {
+        mMap.setOnMapClickListener(mapClickListener);
+    }
+
+    public GoogleMap getMap() {
+        return mMap;
+    }
+
+    public void setOnCameraIdleListener(ButtonClickListener buttonClickListener) {
+        mMap.setOnCameraIdleListener(buttonClickListener);
+    }
+
     public void setUpMap(GoogleMap googleMap) {
-        buttonClickListener = new ButtonClickListener(context);
         mMap = googleMap;
         mMap.setMinZoomPreference(10.0f);
         mMap.setLatLngBoundsForCameraTarget(mapsConfigurationInstance.getMapBounds());
@@ -60,24 +61,22 @@ public class MapManager {
         mMap.moveCamera(CameraUpdateFactory.newCameraPosition(new CameraPosition(mapCenter, mapsConfigurationInstance.getInitialZoom(), mMap.getCameraPosition().tilt,
                 mMap.getCameraPosition().bearing)));
 
-        mMap.setOnCameraIdleListener(buttonClickListener);
-        dijkstra = new ArrayList<>();
-        for (int i = 0; i < GeoJsonMap.routablePathForEachBuilding.size(); i++) {
-            dijkstra.add(new GeoJSONDijkstra(GeoJsonMap.routablePathForEachBuilding.get(i)));
-        }
         ArrayList<String> targetPointsIds = GeoJsonMap.targetPointsIds;
         targetPointsIds.remove("Entrance of building");
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(context,
                 android.R.layout.simple_dropdown_item_1line, targetPointsIds);
 
-        mMap.setPadding(0,150,0,0);
+        mMap.setPadding(0, 150, 0, 0);
 
         mMap.setOnMyLocationButtonClickListener(new LocationButtonClickListener(context, mMap));
-        mapUIElementsManager = new MapUIElementsManager(context, buttonClickListener, mMap, geoJsonMap);
-        buttonClickListener.setMapUIElementsManager(mapUIElementsManager);
-        mapClickListener = new MapClickListener(context, buttonClickListener, mapUIElementsManager);
-        mMap.setOnMapClickListener(mapClickListener);
-        itemClickListener = new ItemClickListener(context, mapUIElementsManager, buttonClickListener);
+    }
+
+    public void setMyLocationEnabled(boolean choice) {
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        mMap.setMyLocationEnabled(choice);
     }
 
     public void addTileProvider(final String level) {
