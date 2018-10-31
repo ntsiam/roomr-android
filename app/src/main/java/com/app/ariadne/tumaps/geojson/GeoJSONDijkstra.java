@@ -255,15 +255,15 @@ public class GeoJSONDijkstra {
                             } else if (currentHeading - prevHeading > 0) {
                                 if (currentHeading - prevHeading < 180) {
                                     if (currentHeading - prevHeading > 50) {
-                                        instruction = "Turn right";
+                                        instruction = "Turn right. ";
                                     } else {
-                                        instruction = "Turn slightly right";
+                                        instruction = "Turn slightly right. ";
                                     }
                                 } else {
                                     if (360 - (currentHeading - prevHeading) > 50) {
-                                        instruction = "Turn left";
+                                        instruction = "Turn left. ";
                                     } else {
-                                        instruction = "Turn slightly left";
+                                        instruction = "Turn slightly left. ";
                                     }
                                 }
                                 routeInstructions.add(instruction);
@@ -285,7 +285,7 @@ public class GeoJSONDijkstra {
                     if (prevLevel != Integer.MIN_VALUE) {
 //                            polylineOptions.add(nextPoint);
 
-                        instruction = "Walk straight for " + ((int) (currentDistance * 10)) / 10.0 + " meters.";
+                        instruction = "Walk straight for " + ((int) (currentDistance * 10)) / 10.0 + " meters. ";
                         routeInstructions.add(instruction);
                         routeInstructionPoints.add(prevInstructionPoint); // Way point is the one that started the straight path that ended at nextPoint
                         routeInstruction = new RouteInstruction(instruction, prevInstructionPoint, level);
@@ -300,8 +300,8 @@ public class GeoJSONDijkstra {
 
                         routeInstructions.add(instruction);
                         Log.i("TAG", "Prevpoint1:" + prevPoint);
-                        routeInstructionPoints.add(prevPoint);
-                        routeInstruction = new RouteInstruction(instruction, prevPoint, level);
+                        routeInstructionPoints.add(prevInstructionPoint);
+                        routeInstruction = new RouteInstruction(instruction, prevInstructionPoint, level);
                         instructionQueue.add(routeInstruction);
 
                         prevInstructionPoint = prevPoint;

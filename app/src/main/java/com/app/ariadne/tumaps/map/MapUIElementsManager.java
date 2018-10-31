@@ -7,9 +7,13 @@ import android.graphics.Point;
 import android.os.Handler;
 import android.speech.tts.TextToSpeech;
 import android.util.Log;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -74,21 +78,51 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
     ImageButton cancelButton;
     TextToSpeech tts;
     public Queue<RouteInstruction> routeInstructionsFinal;
+    ListView instructionList;
 
 
 
-    public MapUIElementsManager(Context context, ButtonClickListener buttonClickListener, GoogleMap mMap, GeoJsonMap geoJsonMap) {
+    public MapUIElementsManager(final Context context, ButtonClickListener buttonClickListener, GoogleMap mMap, GeoJsonMap geoJsonMap) {
         this.context = context;
         this.buttonClickListener = buttonClickListener;
         this.mMap = mMap;
         this.geoJsonMap = geoJsonMap;
         areMapElementsVisible = true;
         descriptionLayout = ((MapsActivity) context).findViewById(R.id.targetDescriptionLayout);
+        descriptionLayout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                final float scale = context.getResources().getDisplayMetrics().density;
+                Log.i(TAG, "Clicked on Description Layout");
+                ViewGroup.LayoutParams params = v.getLayoutParams();
+// Changes the height and width to the specified *pixels*
+                if (instructionList.getAdapter().getCount() > 0) {
+                    int dps = 150;
+                    int pixels = (int) (dps * scale + 0.5f);
+                    Log.i(TAG, "Height: " + params.height);
+                    if (params.height > pixels || params.height < 0) {
+                        pixels = (int) (150 * scale + 0.5f);
+                        params.height = pixels;
+                        v.setLayoutParams(params);
+                    } else {
+                        pixels = (int) (400 * scale + 0.5f);
+//                        params.height = pixels;
+                        params.height = -2;
+                    }
+                }
+                v.setLayoutParams(params);
+            }
+        });
         destinationEditText = ((MapsActivity) context).findViewById(R.id.findDestination);
         cancelButton = ((MapsActivity) context).findViewById(R.id.cancel_button);
 
         tts = new TextToSpeech(context, this);
+        instructionList = ((MapsActivity) context).findViewById(R.id.instruction_list);
+        ArrayAdapter adapterForInstructions =  new ArrayAdapter<>(context, android.R.layout.simple_dropdown_item_1line, new ArrayList());
+        instructionList.setAdapter(adapterForInstructions);
+
     }
+
 
     public LatLngWithTags getSource() {
         return source;
@@ -482,7 +516,7 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
 
                                 mMap.addMarker(options);
                                 tts.speak(currInstruction, TextToSpeech.QUEUE_ADD, null);
-                                currInstruction = routeInstruction.getInstruction() + ", ";
+                                currInstruction = routeInstruction.getInstruction();
                                 routeInstructionsFinal.add(new RouteInstruction(currInstruction, prevPoint, routeInstruction.getLevel()));
 //                                currInstruction = instructions.get(index) + ", ";
                             }
@@ -513,6 +547,18 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
                         routeInstructionsFinal.add(new RouteInstruction(currInstruction, prevPoint, routeInstruction.getLevel()));
 
                     }
+
+
+                    // Show instructions on ListView
+                    ArrayAdapter adapterForInstructions =  new ArrayAdapter<>(context, android.R.layout.simple_dropdown_item_1line, instructions);
+                    instructionList.setAdapter(adapterForInstructions);
+                    instructionList.setVisibility(ListView.VISIBLE);
+//                    if (instructionList.getAdapter().getCount() > 0) {
+//                        Log.i(TAG, "Adapter has elements");
+//                        descriptionLayout.setMinimumHeight(318);
+//                    }
+
+
 
                 }
             });

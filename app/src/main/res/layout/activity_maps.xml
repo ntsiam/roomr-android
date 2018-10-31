@@ -241,7 +241,7 @@
     <LinearLayout
         android:id="@+id/targetDescriptionLayout"
         android:layout_width="match_parent"
-        android:layout_height="135dp"
+        android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_alignParentStart="true"
         android:background="#ffffff"
@@ -285,6 +285,17 @@
             android:layout_marginTop="5dp"
             android:src="@android:drawable/ic_menu_revert"
             android:visibility="gone" />
+
+        <ListView
+            android:id="@+id/instruction_list"
+            android:layout_width="match_parent"
+            android:layout_height="270dp"
+            android:layout_below="@+id/revert"
+            android:layout_marginStart="0dp"
+            android:layout_weight="0.97"
+            android:visibility="gone"
+            tools:ignore="ObsoleteLayoutParam" />
+
 
     </LinearLayout>
 
