@@ -19,14 +19,19 @@ import com.app.ariadne.tumaps.listeners.MapClickListener;
 import com.app.ariadne.tumaps.map.MapManager;
 import com.app.ariadne.tumaps.map.MapUIElementsManager;
 import com.app.ariadne.tumaps.models.Route;
+import com.app.ariadne.tumaps.models.RouteInstruction;
 import com.app.ariadne.tumrfmap.R;
 import com.app.ariadne.tumaps.listeners.ItemClickListener;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.util.ArrayList;
+import java.util.Queue;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
@@ -42,6 +47,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     MapManager mapManager;
     MapClickListener mapClickListener;
     ItemClickListener itemClickListener;
+
+    public static ArrayList<String> instructions;
+    public static ArrayList<LatLng> waypoints;
+    public static Queue<RouteInstruction> routeInstructionQueue;
 
 
     public static final int MY_PERMISSIONS_REQUEST_FINE_LOCATION = 1;
@@ -99,7 +108,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mapManager.setOnCameraIdleListener(buttonClickListener);
         mapUIElementsManager = new MapUIElementsManager(this, buttonClickListener, mapManager.getMap(), geoJsonMap);
         buttonClickListener.setMapUIElementsManager(mapUIElementsManager);
-        mapClickListener = new MapClickListener(this, buttonClickListener, mapUIElementsManager);
+        mapClickListener = new MapClickListener(mapUIElementsManager);
         mapManager.setOnMapClickListener(mapClickListener);
         itemClickListener = new ItemClickListener(this, mapUIElementsManager, buttonClickListener);
 
@@ -140,9 +149,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         getNameScreenIntent.putExtra("callingActivity", "MapsActivity");
         previousDestination = "";
 
-        if (mapUIElementsManager.target != null) {
-            previousDestination = mapUIElementsManager.target.getId();
-            getNameScreenIntent.putExtra("destination", mapUIElementsManager.getTarget().getId());
+        if (mapUIElementsManager.destination != null) {
+            previousDestination = mapUIElementsManager.destination.getId();
+            getNameScreenIntent.putExtra("destination", mapUIElementsManager.getDestination().getId());
         }
         if (mapUIElementsManager.areSourceAndDestinationNotNull() && GeoJsonMap.isSourceAndDestinationInTheSameBuilding(mapUIElementsManager.getSource(), mapUIElementsManager.getDestination())) {
             getNameScreenIntent.putExtra("source", mapUIElementsManager.source.getId());
@@ -156,7 +165,32 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             mapUIElementsManager.setSourceAndDestination(sourceName, targetName);
             //Log.i(TAG, "Destination level = " + mapUIElementsManager.destinationLevel);
             if (mapUIElementsManager.areSourceAndDestinationNotNull()) {
-                Route route = dijkstraForEachBuilding.get(targetBuildingIndex).getPath(mapUIElementsManager.source);
+                Route route = dijkstraForEachBuilding.get(targetBuildingIndex).getPath(mapUIElementsManager.getSource());
+
+                instructions = dijkstraForEachBuilding.get(targetBuildingIndex).routeInstructions;
+                waypoints = dijkstraForEachBuilding.get(targetBuildingIndex).routeInstructionPoints;
+                routeInstructionQueue = dijkstraForEachBuilding.get(targetBuildingIndex).instructionQueue;
+//                String currInstruction = "";
+//                LatLng prevPoint = null;
+//                int index = 0;
+//                for (LatLng point: waypoints) {
+//                    if (prevPoint != null) {
+//                        if (prevPoint.equals(point)) {
+//                            currInstruction += ", " + instructions.get(index);
+//                        } else {
+//                            currInstruction = instructions.get(index);
+//                            MarkerOptions options = new MarkerOptions()
+//                                    .position(prevPoint)
+//                                    .title(currInstruction);
+//
+//                            mapManager.mMap.addMarker(options);
+//                        }
+//                    }
+//                    prevPoint = point;
+//                }
+
+
+
                 LatLng minPoint = new LatLng(dijkstraForEachBuilding.get(targetBuildingIndex).minRouteLat, dijkstraForEachBuilding.get(targetBuildingIndex).minRouteLng);
                 LatLng maxPoint = new LatLng(dijkstraForEachBuilding.get(targetBuildingIndex).maxRouteLat, dijkstraForEachBuilding.get(targetBuildingIndex).maxRouteLng);
                 mapUIElementsManager.setRoutePathOnMap(route, routeHandler, minPoint, maxPoint);
@@ -177,12 +211,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         AsyncTask.execute(new Runnable() {
             @Override
             public void run() {
-                if (!previousDestination.equals(mapUIElementsManager.targetName)) {
-                    previousDestination = mapUIElementsManager.targetName;
+                String destinationName = mapUIElementsManager.getDestinationName();
+                if (!previousDestination.equals(destinationName)) {
+                    previousDestination = destinationName;
                     targetBuildingIndex = GeoJsonMap.buildingIndexes.get(targetBuildingId);
-                    dijkstraForEachBuilding.get(targetBuildingIndex).startDijkstra(GeoJsonMap.findDestinationFromId(mapUIElementsManager.targetName));
+                    dijkstraForEachBuilding.get(targetBuildingIndex).startDijkstra(GeoJsonMap.findDestinationFromId(destinationName));
                 }
-                handleRouteRequest(mapUIElementsManager.sourceName, mapUIElementsManager.targetName);
+                handleRouteRequest(mapUIElementsManager.getSourceName(), destinationName);
             }
         });
     }
@@ -197,13 +232,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void startAsyncDijkstraForSelectedTarget() {
-        if (!previousDestination.equals(mapUIElementsManager.target.getId())) { // If destination changed start new dijkstraForEachBuilding
-            previousDestination = mapUIElementsManager.target.getId();
+        if (!previousDestination.equals(mapUIElementsManager.getDestination().getId())) { // If destination changed start new dijkstraForEachBuilding
+            previousDestination = mapUIElementsManager.getDestination().getId();
             AsyncTask.execute(new Runnable() {
                 @Override
                 public void run() {
-                    targetBuildingIndex = GeoJsonMap.buildingIndexes.get(mapUIElementsManager.target.getBuildingId());
-                    dijkstraForEachBuilding.get(targetBuildingIndex).startDijkstra(mapUIElementsManager.target);
+                    targetBuildingIndex = GeoJsonMap.buildingIndexes.get(mapUIElementsManager.getDestination().getBuildingId());
+                    dijkstraForEachBuilding.get(targetBuildingIndex).startDijkstra(mapUIElementsManager.getDestination());
                 }
             });
         }
@@ -225,15 +260,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void handleSourceDestinationFromActivity(Intent data) {
-        mapUIElementsManager.sourceName = data.getStringExtra("Starting point");
-        mapUIElementsManager.targetName = data.getStringExtra("Destination");
-        //Log.i(TAG, "Source: " + mapUIElementsManager.sourceName + ", Destination: " + mapUIElementsManager.targetName);
+        String sourceName = data.getStringExtra("Starting point");
+        String destinationName = data.getStringExtra("Destination");
+        mapUIElementsManager.setSourceName(sourceName);
+        mapUIElementsManager.setDestinationName(destinationName);
+        //Log.i(TAG, "Source: " + mapUIElementsManager.sourceName + ", Destination: " + mapUIElementsManager.destinationName);
         buttonClickListener.showDirectionsButtons();
         if (mapUIElementsManager.isRoutableSourceDestination()) {
-            final String targetBuildingId = GeoJsonMap.getBuildingIdFromRoomName(mapUIElementsManager.targetName);
-            final String sourceBuildingId = GeoJsonMap.getBuildingIdFromRoomName(mapUIElementsManager.sourceName);
+            final String targetBuildingId = GeoJsonMap.getBuildingIdFromRoomName(destinationName);
+            final String sourceBuildingId = GeoJsonMap.getBuildingIdFromRoomName(sourceName);
 
-            if (targetBuildingId.equals(sourceBuildingId) || mapUIElementsManager.sourceName.equals("Entrance of building")) {
+            if (targetBuildingId.equals(sourceBuildingId) || sourceName.equals("Entrance of building")) {
                 startAsyncTaskToHandleRouteRequest(targetBuildingId);
             } else {
                 Toast.makeText(this, "Inter-building routing is not supported yet", Toast.LENGTH_LONG).show();
@@ -242,6 +279,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     /**
+     * UNUSED
      * This is used for loading the settings. A new activity should be created and this should be placed in the
      * onCreate() method.
      * The settings are stored inside the res/xml/preferences.xml file

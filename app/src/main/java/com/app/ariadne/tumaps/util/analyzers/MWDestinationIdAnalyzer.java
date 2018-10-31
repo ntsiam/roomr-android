@@ -1,13 +1,13 @@
 package com.app.ariadne.tumaps.util.analyzers;
 
-import java.util.StringTokenizer;
+import com.app.ariadne.tumaps.geojson.GeoJsonMap;
 
-import static com.app.ariadne.tumaps.MapsActivity.getRoomIdFromBuildingName;
+import java.util.StringTokenizer;
 
 public class MWDestinationIdAnalyzer implements BuildingDestinationIdAnalyzer {
     @Override
     public boolean isValidDestinationId(String id) {
-        String name = getRoomIdFromBuildingName(id);
+        String name = GeoJsonMap.getRoomIdFromBuildingName(id);
         StringTokenizer multiTokenizer = new StringTokenizer(name, ".");
         int index = 0;
         while (multiTokenizer.hasMoreTokens()) {

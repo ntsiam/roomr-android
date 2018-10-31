@@ -1,10 +1,14 @@
 package com.app.ariadne.tumaps.geojson;
 
 import android.graphics.Color;
+import android.util.Log;
 
 import com.app.ariadne.tumaps.dijkstra.DijkstraAlgorithm;
 import com.app.ariadne.tumaps.dijkstra.model.Edge;
+import com.app.ariadne.tumaps.dijkstra.model.Graph;
+import com.app.ariadne.tumaps.dijkstra.model.Vertex;
 import com.app.ariadne.tumaps.models.Route;
+import com.app.ariadne.tumaps.models.RouteInstruction;
 import com.app.ariadne.tumrfmap.R;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
@@ -12,13 +16,12 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.maps.android.SphericalUtil;
 import com.google.maps.android.data.LineString;
-import com.app.ariadne.tumaps.dijkstra.model.Graph;
-import com.app.ariadne.tumaps.dijkstra.model.Vertex;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Queue;
 import java.util.Set;
 import java.util.StringTokenizer;
 
@@ -37,6 +40,9 @@ public class GeoJSONDijkstra {
     public int minRouteLevel;
     public int maxRoutelevel;
     public int sourceLevel;
+    public ArrayList<String> routeInstructions;
+    public ArrayList<LatLng> routeInstructionPoints;
+    public Queue<RouteInstruction> instructionQueue;
 
 
     public GeoJSONDijkstra(ArrayList<ArrayList<LatLngWithTags>> paths) {
@@ -164,6 +170,18 @@ public class GeoJSONDijkstra {
         ArrayList<PolylineOptions> polylineOptionsInLevels = new ArrayList<>();
         PolylineOptions polylineOptions = new PolylineOptions().width(10).color(Color.RED).zIndex(Integer.MAX_VALUE - 1000);
         ArrayList<LatLng> pathArrayList = new ArrayList<>();
+
+        routeInstructions = new ArrayList<>();
+        routeInstructionPoints = new ArrayList<>();
+        String instruction;
+        double currentHeading;
+        double prevHeading = -1000.0;
+        double currentDistance = 0.0;
+        LatLng prevInstructionPoint = null;
+        instructionQueue = new LinkedList<>();
+        RouteInstruction routeInstruction;
+
+
 //        System.out.println("Target: " + vertices.get(index).toString());
         path = getGraphPath(destination);
         path = removePathDuplicates(path);
@@ -200,10 +218,96 @@ public class GeoJSONDijkstra {
 
                     pathArrayList.add(nextPoint);
                     polylineOptions.add(nextPoint);
-                } else {
+                    double tempDistance = SphericalUtil.computeDistanceBetween(prevPoint, nextPoint);
+                    currentHeading = SphericalUtil.computeHeading(prevPoint, nextPoint);
+                    if (currentHeading < 0) {
+                        currentHeading = 360 + currentHeading;
+                    }
+                    if (Math.abs(currentHeading - prevHeading) > 20.0) { // If it is not the first point in the path and there is a turn
+                        Log.i("Instuctions", "Current distance = " + currentDistance);
+                        if (currentDistance > 0.2) { // If there has been some distance travelled
+                            instruction = "Walk straight on level " + prevLevel + " for " + ((int) (currentDistance * 10)) / 10.0 + " meters.";
+                            routeInstructions.add(instruction);
+                            routeInstructionPoints.add(prevInstructionPoint); // Way point is the one that started the straight path that ended at nextPoint
+                            routeInstruction = new RouteInstruction(instruction, prevInstructionPoint, level);
+                            instructionQueue.add(routeInstruction);
+                            if (currentHeading - prevHeading < 0) { // Turned left
+                                if (currentHeading - prevHeading > -180) {
+                                    if (currentHeading - prevHeading < -50) {
+                                        instruction = "Turn left";
+                                    } else {
+                                        instruction = "Turn slightly left";
+                                    }
+                                } else {
+                                    if (360 - (prevHeading - currentHeading) > 50) {
+                                        instruction = "Turn right";
+                                    } else {
+                                        instruction = "Turn slightly right";
+                                    }
+                                }
+                                routeInstructions.add(instruction);
+                                Log.i("TAG", "Prevpoint3:" + prevPoint);
+                                routeInstructionPoints.add(prevPoint); // Add the direction for turning at the prevPoint
+                                routeInstruction = new RouteInstruction(instruction, prevPoint, level);
+                                instructionQueue.add(routeInstruction);
+
+                                prevInstructionPoint = prevPoint; // New straight path started from prevPoint
+                            } else if (currentHeading - prevHeading > 0) {
+                                if (currentHeading - prevHeading < 180) {
+                                    if (currentHeading - prevHeading > 50) {
+                                        instruction = "Turn right";
+                                    } else {
+                                        instruction = "Turn slightly right";
+                                    }
+                                } else {
+                                    if (360 - (currentHeading - prevHeading) > 50) {
+                                        instruction = "Turn left";
+                                    } else {
+                                        instruction = "Turn slightly left";
+                                    }
+                                }
+                                routeInstructions.add(instruction);
+                                Log.i("TAG", "Prevpoint2:" + prevPoint);
+                                routeInstructionPoints.add(prevPoint);
+                                prevInstructionPoint = prevPoint;
+                                routeInstruction = new RouteInstruction(instruction, prevPoint, level);
+                                instructionQueue.add(routeInstruction);
+
+                            }
+                        }
+                        currentDistance = tempDistance;
+                    } else { // If there is no turn
+                        Log.i("Instructions", "Heading difference: " + Math.abs(currentHeading - prevHeading));
+                        currentDistance+=tempDistance;
+                    }
+                    prevHeading = currentHeading;
+                } else { // Level changed
                     if (prevLevel != Integer.MIN_VALUE) {
 //                            polylineOptions.add(nextPoint);
+
+                        instruction = "Walk straight for " + ((int) (currentDistance * 10)) / 10.0 + " meters.";
+                        routeInstructions.add(instruction);
+                        routeInstructionPoints.add(prevInstructionPoint); // Way point is the one that started the straight path that ended at nextPoint
+                        routeInstruction = new RouteInstruction(instruction, prevInstructionPoint, level);
+                        instructionQueue.add(routeInstruction);
+
+
+
+                        instruction = "Go " + (prevLevel < level ? "up " : "down ") + String.valueOf(Math.abs(prevLevel - level)) + " levels";
+                        currentDistance = SphericalUtil.computeDistanceBetween(prevPoint, nextPoint);
+                        prevHeading = SphericalUtil.computeHeading(prevPoint, nextPoint);
+
+
+                        routeInstructions.add(instruction);
+                        Log.i("TAG", "Prevpoint1:" + prevPoint);
+                        routeInstructionPoints.add(prevPoint);
+                        routeInstruction = new RouteInstruction(instruction, prevPoint, level);
+                        instructionQueue.add(routeInstruction);
+
+                        prevInstructionPoint = prevPoint;
+
                         polylineOptionsInLevels.add(polylineOptions);
+                        addPolylineToHashMap(pathHashMapForEachLevel, prevLevel, polylineOptions);
 
 //                        if (!pathHashMapForEachLevel.containsKey(prevLevel)) {
 //                            pathHashMapForEachLevel.put(level, new ArrayList<PolylineOptions>());
@@ -213,17 +317,21 @@ public class GeoJSONDijkstra {
 //                        polyline.add(polylineOptions);
 //                        Log.i("GeoJSONDijkstra:getPath", "Adding to level: " + prevLevel + ", new size: " + pathHashMapForEachLevel.get(prevLevel).size());
 //                        pathHashMapForEachLevel.put(level, polyline);
-                        addPolylineToHashMap(pathHashMapForEachLevel, prevLevel, polylineOptions);
                     }
                     polylineOptions = new PolylineOptions().width(10).color(Color.RED).zIndex(Integer.MAX_VALUE - 1000);
                     if (prevPoint != null) {
                         pathArrayList.add(prevPoint);
                         polylineOptions.add(prevPoint);
                         addPathStairMarker(pathStairMarkers, prevPoint, prevLevel, level);
+
+
                     }
                     pathArrayList.add(nextPoint);
                     polylineOptions.add(nextPoint);
                     prevLevel = level;
+                }
+                if (prevPoint == null) {
+                    prevInstructionPoint = nextPoint;
                 }
                 prevPoint = nextPoint;
             }
@@ -237,7 +345,15 @@ public class GeoJSONDijkstra {
 
         Route routeForEachLevel = new Route(pathHashMapForEachLevel, maxRoutelevel, minRouteLevel, sourceLevel, pathStairMarkers);
 
+        printInstructions(routeInstructions);
         return routeForEachLevel;
+    }
+
+    private void printInstructions(ArrayList<String> instructions) {
+        for (String instruction: instructions) {
+            Log.i("Instructions", instruction);
+        }
+
     }
 
     private void addPathStairMarker(HashMap<Integer, ArrayList<MarkerOptions>> pathStairMarkers, LatLng point, int prevLevel, int newLevel) {

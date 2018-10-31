@@ -6,7 +6,6 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.ScrollView;
 import android.widget.ToggleButton;
 
 import com.app.ariadne.tumaps.MapsConfiguration;
@@ -22,26 +21,24 @@ import com.google.android.gms.maps.model.LatLng;
 import java.util.ArrayList;
 
 public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCameraIdleListener {
-    MapUIElementsManager mapUIElementsManager;
-    Context context;
-    ToggleButton level4;
-    ToggleButton level3;
-    ToggleButton level2;
-    ToggleButton level1;
-    ToggleButton level0;
-    ToggleButton leveln1;
-    ToggleButton leveln2;
-    ToggleButton leveln3;
-    ToggleButton leveln4;
-    public ArrayList<ToggleButton> floorButtonList;
-    Button directionsButton;
-    ImageButton revertButton;
-    EditText destinationEditText;
-    MapManager mapManager;
-    //Maschinenwesen min: 48.264547, 11.667344, max: 48.266825, 11.671324
-    //Main campus: 48.147561, 11.565581, 48.151462, 11.570093
+    private MapUIElementsManager mapUIElementsManager;
+    private Context context;
+    private ToggleButton level4;
+    private ToggleButton level3;
+    private ToggleButton level2;
+    private ToggleButton level1;
+    private ToggleButton level0;
+    private ToggleButton leveln1;
+    private ToggleButton leveln2;
+    private ToggleButton leveln3;
+    private ToggleButton leveln4;
+    private ArrayList<ToggleButton> floorButtonList;
+    private Button directionsButton;
+    private ImageButton revertButton;
+    private EditText destinationEditText;
+    private MapManager mapManager;
 
-    private static IndoorBuildingBoundsAndFloors[] BOUNDS_FOR_INDOOR_BUTTONS;
+    private static IndoorBuildingBoundsAndFloors[] boundsForIndoorButtons;
 
     private static final String TAG = "ButtonClickListener";
 
@@ -55,7 +52,7 @@ public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCa
         directionsButton.setOnClickListener(this);
         revertButton.setOnClickListener(this);
         destinationEditText = mapsActivity.findViewById(R.id.findDestination);
-        BOUNDS_FOR_INDOOR_BUTTONS = MapsConfiguration.getInstance().getBoundsForIndoorButtons();
+        boundsForIndoorButtons = MapsConfiguration.getInstance().getBoundsForIndoorButtons();
     }
 
     public void setMapUIElementsManager(MapUIElementsManager mapUIElementsManager) {
@@ -69,7 +66,7 @@ public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCa
         clickFloor(level);
     }
 
-    public void clickFloor(int requestedLevel) {
+    private void clickFloor(int requestedLevel) {
         String level;
         level = String.valueOf(requestedLevel);
         //Log.i(TAG, "Requested level: " + level);
@@ -84,11 +81,11 @@ public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCa
                 if (!levelButton.isChecked()) {
                     //Log.i(TAG, "Entered here");
                     level = ""; //no tiles for ""
-                    if (mapUIElementsManager.route != null) {
+                    if (mapUIElementsManager.getRoute() != null) {
                         mapUIElementsManager.addRouteLineFromPolyLineOptions(Integer.MIN_VALUE);
                     }
                 } else {
-                    if (mapUIElementsManager.route != null) {
+                    if (mapUIElementsManager.getRoute() != null) {
 //                        int polyLineIndex = mapUIElementsManager.findPolyLineIndex(requestedLevel);
                         mapUIElementsManager.addRouteLineFromPolyLineOptions(requestedLevel);
                     }
@@ -96,7 +93,7 @@ public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCa
             }
             currentIndexInButtonList++;
         }
-        mapUIElementsManager.level = level;
+        mapUIElementsManager.setLevel(level);
         if (!level.equals("")) {
             mapUIElementsManager.addRouteMarkers(requestedLevel);
         }
@@ -153,17 +150,10 @@ public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCa
         directionsButton.setVisibility(Button.VISIBLE);
     }
 
-    public void setButtonVisibilityForSingleLocation(IndoorBuildingBoundsAndFloors indoorBuildingBoundsAndFloors) {
-        int minZoom = 15;
-        LatLng cameraPosition = mapUIElementsManager.mMap.getCameraPosition().target;
+    private void setButtonVisibilityForSingleLocation(IndoorBuildingBoundsAndFloors indoorBuildingBoundsAndFloors) {
+        LatLng cameraPosition = mapUIElementsManager.getCameraPosition();
         BoundingBox boundingBox = indoorBuildingBoundsAndFloors.getBoundingBox();
-        double maxLat = boundingBox.getMaxLat();
-        double maxLng = boundingBox.getMaxLng();
-        double minLat = boundingBox.getMinLat();
-        double minLng = boundingBox.getMinLng();
-        ScrollView sv = (ScrollView)((MapsActivity)(context)).findViewById(R.id.scrollViewButtons);
-        if (cameraPosition.latitude < maxLat && cameraPosition.latitude > minLat && cameraPosition.longitude < maxLng &&
-                cameraPosition.longitude > minLng && mapUIElementsManager.mMap.getCameraPosition().zoom > minZoom) {
+        if (isCameraPositionInBoundingBox(cameraPosition, boundingBox)) {
             int floor = MapUIElementsManager.MAX_FLOOR;
             for (ToggleButton button: floorButtonList) {
                 // Here set the corresponding floor button to visible, if the current map includes a layer for the button's floor
@@ -177,6 +167,15 @@ public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCa
     }
 
 
+    private boolean isCameraPositionInBoundingBox(LatLng cameraPosition, BoundingBox boundingBox) {
+        int minZoom = MapsConfiguration.getInstance().getMinZoomForIndoorMaps();
+        double maxLat = boundingBox.getMaxLat();
+        double maxLng = boundingBox.getMaxLng();
+        double minLat = boundingBox.getMinLat();
+        double minLng = boundingBox.getMinLng();
+        return cameraPosition.latitude < maxLat && cameraPosition.latitude > minLat && cameraPosition.longitude < maxLng &&
+                cameraPosition.longitude > minLng && mapUIElementsManager.getZoomLevel() > minZoom;
+    }
 
     @Override
     public void onClick(View view) {
@@ -226,7 +225,7 @@ public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCa
         leveln3.setVisibility(Button.GONE);
         leveln4.setVisibility(Button.GONE);
         if (mapUIElementsManager != null) {
-            for (IndoorBuildingBoundsAndFloors indoorBuildingBoundsAndFloors : BOUNDS_FOR_INDOOR_BUTTONS) {
+            for (IndoorBuildingBoundsAndFloors indoorBuildingBoundsAndFloors : boundsForIndoorButtons) {
                 setButtonVisibilityForSingleLocation(indoorBuildingBoundsAndFloors);
             }
         }

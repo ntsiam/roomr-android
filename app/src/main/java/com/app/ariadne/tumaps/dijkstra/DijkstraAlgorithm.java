@@ -81,7 +81,7 @@ public class DijkstraAlgorithm {
 
 //        for (Edge edge : edges) {
 //            if (edge.getSource().equals(node)
-//                    && edge.getDestination().equals(target)) {
+//                    && edge.getDestination().equals(destination)) {
 //                return edge.getWeight();
 //            }
 //        }
@@ -127,7 +127,7 @@ public class DijkstraAlgorithm {
     }
 
     /*
-     * This method returns the path from the source to the selected target and
+     * This method returns the path from the source to the selected destination and
      * NULL if no path exists
      */
     public LinkedList<Vertex> getPath(Vertex target) {

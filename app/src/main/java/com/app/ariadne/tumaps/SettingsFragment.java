@@ -5,6 +5,9 @@ import android.preference.PreferenceFragment;
 
 import com.app.ariadne.tumrfmap.R;
 
+/**
+ * UNUSED
+ */
 public class SettingsFragment extends PreferenceFragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {

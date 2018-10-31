@@ -37,7 +37,7 @@ public class LocationButtonClickListener implements GoogleMap.OnMyLocationButton
         return false;
     }
 
-    void initLocationUpdates() {
+    private void initLocationUpdates() {
         locationManager = (LocationManager) ((MapsActivity)(this.context)).getSystemService(LOCATION_SERVICE);
         if (isFirstTime) {
             setLocationUpdates(locationManager); // Used for the GPS/Network localization

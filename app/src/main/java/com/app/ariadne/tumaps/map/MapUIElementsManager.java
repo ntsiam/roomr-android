@@ -5,6 +5,8 @@ import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.os.Handler;
+import android.speech.tts.TextToSpeech;
+import android.util.Log;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
@@ -14,6 +16,7 @@ import android.widget.TextView;
 import com.app.ariadne.tumaps.MapsConfiguration;
 import com.app.ariadne.tumaps.geojson.GeoJsonHelper;
 import com.app.ariadne.tumaps.MapsActivity;
+import com.app.ariadne.tumaps.models.RouteInstruction;
 import com.app.ariadne.tumrfmap.R;
 import com.app.ariadne.tumaps.models.Entrance;
 import com.app.ariadne.tumaps.geojson.GeoJsonMap;
@@ -32,14 +35,17 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.maps.android.SphericalUtil;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Locale;
+import java.util.Queue;
 
-import static com.app.ariadne.tumaps.MapsActivity.getRoomIdFromBuildingName;
 import static com.app.ariadne.tumaps.geojson.GeoJsonMap.findDestinationFromId;
 
-public class MapUIElementsManager {
+public class MapUIElementsManager implements TextToSpeech.OnInitListener {
     public HashMap<Integer, ArrayList<PolylineOptions>> routePolylineOptionsInLevels;
     public Route route;
     public PolylineOptions routePolylineOptions;
@@ -50,11 +56,11 @@ public class MapUIElementsManager {
     private final int MIN_FLOOR = -4;
     public static final int MAX_FLOOR = 4;
     public String sourceName;
-    public String targetName;
+    public String destinationName;
     public Circle sourceMarker;
     public GoogleMap mMap;
     public Marker destinationMarker;
-    public LatLngWithTags target;
+    public LatLngWithTags destination;
     public LatLngWithTags source;
     public int sourceLevel;
     public int destinationLevel;
@@ -66,6 +72,8 @@ public class MapUIElementsManager {
     LinearLayout descriptionLayout;
     EditText destinationEditText;
     ImageButton cancelButton;
+    TextToSpeech tts;
+    public Queue<RouteInstruction> routeInstructionsFinal;
 
 
 
@@ -78,23 +86,106 @@ public class MapUIElementsManager {
         descriptionLayout = ((MapsActivity) context).findViewById(R.id.targetDescriptionLayout);
         destinationEditText = ((MapsActivity) context).findViewById(R.id.findDestination);
         cancelButton = ((MapsActivity) context).findViewById(R.id.cancel_button);
+
+        tts = new TextToSpeech(context, this);
     }
 
     public LatLngWithTags getSource() {
         return source;
     }
 
-    public LatLngWithTags getTarget() {
-        return target;
+    public LatLngWithTags getDestination() {
+        return destination;
     }
 
+    public String getSourceName() {
+        return sourceName;
+    }
+
+    public String getDestinationName() {
+        return destinationName;
+    }
+
+    public void setSourceName(String sourceName) {
+        this.sourceName = sourceName;
+    }
+
+    public void setDestinationName(String destinationName) {
+        this.destinationName = destinationName;
+    }
+
+    public Route getRoute() {
+        return route;
+    }
+
+    public int getSourceLevel() {
+        return sourceLevel;
+    }
+
+    public String getLevel() {
+        return level;
+    }
+
+    public void setLevel(String level) {
+        this.level = level;
+    }
+
+    public LatLng getCameraPosition() {
+        return mMap.getCameraPosition().target;
+    }
+
+    public double getZoomLevel() {
+        return mMap.getCameraPosition().zoom;
+    }
+
+    public void handleClickOnMap(LatLng latLngClicked) {
+        if (level != null) {
+            boolean isClickHandled = false;
+            int levelToShow = Integer.valueOf(level);
+            if (level != null && !level.equals("") && route != null) {
+//            Log.i("OnClick", "mapUIElementsManager.level is defined");
+//                Log.i("OnClick", "mapUIElementsManager.route is defined");
+                for (int i = route.getMinRouteLevel(); i <= route.getMaxRouteLevel(); i++) {
+                    levelToShow = findLevelToShowBasedOnUserClickedLatLng(i, latLngClicked, levelToShow);
+                }
+                if (levelToShow != Integer.valueOf(level)) {
+                    buttonClickListener.setFloorAsChecked(levelToShow);
+                    addRouteLineFromPolyLineOptions(levelToShow);
+                    isClickHandled = true;
+                }
+            }
+            if (!isClickHandled && destination != null) {
+                toggleMapUIElementVisibility();
+            }
+        }
+    }
+
+    private int findLevelToShowBasedOnUserClickedLatLng(int currentLevel, LatLng latLngClicked, int levelToShow) {
+        double minDistance = 100.0;
+        ArrayList<PolylineOptions> routeLevelContainer = route.getRouteHashMapForLevels().get(currentLevel);
+        for (PolylineOptions routeLevel : routeLevelContainer) {
+            for (LatLng point : routeLevel.getPoints()) {
+                double tmpDistance = SphericalUtil.computeDistanceBetween(point, latLngClicked);
+                if (tmpDistance < minDistance) {
+                    minDistance = tmpDistance;
+                    if (minDistance < 5.0) {
+                        levelToShow = currentLevel;
+                    }
+//                                Log.i("OnClick", "mindistance: " + minDistance);
+                }
+            }
+        }
+        return levelToShow;
+    }
+
+
     public boolean isRoutableSourceDestination() {
-        return !(sourceName.equals("My Location") || sourceName.equals(targetName) || sourceName.contains("ntrance")
-                && targetName.contains("ntrance") || targetName.contains("ntrance") && sourceName.contains("ntrance"));
+        return !(sourceName.equals("My Location") || sourceName.equals(destinationName) || sourceName.contains("ntrance")
+                && destinationName.contains("ntrance") || destinationName.contains("ntrance") && sourceName.contains("ntrance"));
     }
 
     public boolean areSourceAndDestinationNotNull() {
-        return source != null && target != null;
+        return source != null && destination != null;
     }
 
     public void setRoutePathOnMap(Route routePath, Handler routeHandler, LatLng minPoint, LatLng maxPoint) {
@@ -105,15 +196,15 @@ public class MapUIElementsManager {
 
     public void setSourceAndDestination(final String sourceName, final String targetName) {
         if (sourceName.equals("Entrance of building")){
-//                mapUIElementsManager.target = findDestinationFromId(targetName);
-            source = geoJsonMap.findEntranceForDestination(target).getEntranceLatLngWithTags();
+//                mapUIElementsManager.destination = findDestinationFromId(destinationName);
+            source = geoJsonMap.findEntranceForDestination(destination).getEntranceLatLngWithTags();
         } else {
             source = GeoJsonMap.findDestinationFromId(sourceName);
         }
         if (targetName.equals("Entrance of building")) {
-            target = geoJsonMap.findEntranceForDestination(source).getEntranceLatLngWithTags();
+            destination = geoJsonMap.findEntranceForDestination(source).getEntranceLatLngWithTags();
         } else {
-            target = GeoJsonMap.findDestinationFromId(targetName);
+            destination = GeoJsonMap.findDestinationFromId(targetName);
         }
         sourceLevel = MapsConfiguration.getInstance().getLevelFromId(sourceName);
         //Log.i(TAG, "Source level = " + mapUIElementsManager.sourceLevel);
@@ -144,14 +235,14 @@ public class MapUIElementsManager {
     }
 
     public void setDestinationOnMap(String destinationId) {
-        target = findDestinationFromId(destinationId);
-        if (target != null) {
+        destination = findDestinationFromId(destinationId);
+        if (destination != null) {
 //            destinationEditText = findViewById(R.id.findDestination);
-            addMarkerAndZoomCameraOnTarget(target);
-            addDestinationDescription(target);
+            addMarkerAndZoomCameraOnTarget(destination);
+            addDestinationDescription(destination);
             buttonClickListener.showDestinationFoundButtons(destinationId);
 
-            int level = MapsConfiguration.getInstance().getLevelFromId(target.getId());
+            int level = MapsConfiguration.getInstance().getLevelFromId(destination.getId());
             //Log.i(TAG, "Set floor as checked: " + level);
             buttonClickListener.setFloorAsChecked(level);
         }
@@ -279,7 +370,7 @@ public class MapUIElementsManager {
     }
 
     public void removeAllDestinationElementsFromMap() {
-        target = null;
+        destination = null;
         removeDestinationMarker();
         removeDestinationDescription();
         removeSourceCircle();
@@ -322,10 +413,10 @@ public class MapUIElementsManager {
         TextView destinationTextview = activity.findViewById(R.id.findDestination);
         if (entrance != null) {
             //Log.i(TAG, "Entrance found: " + entrance.getAddress());
-            destinationTextview.setText(target.getId());
+            destinationTextview.setText(destination.getId());
             descriptionLayout.setVisibility(LinearLayout.VISIBLE);
             TextView descriptionText = activity.findViewById(R.id.targetDescriptionHeader);
-            descriptionText.setText(String.format("%s, %s", getRoomIdFromBuildingName(target.getId()), entrance.getBuilding()));
+            descriptionText.setText(String.format("%s, %s", GeoJsonMap.getRoomIdFromBuildingName(destination.getId()), entrance.getBuilding()));
             TextView descriptionTextBody = activity.findViewById(R.id.targetDescriptionBody);
             descriptionTextBody.setText(String.format("%s, %s, %s", entrance.getAddress(), entrance.getPlz(), entrance.getCity()));
         } else {
@@ -354,8 +445,8 @@ public class MapUIElementsManager {
                         routeLines.add(mMap.addPolyline(routePolylineOptions));
                     }
                     removeDestinationMarker();
-                    addDestinationMarker(target);
-                    addDestinationDescription(target);
+                    addDestinationMarker(destination);
+                    addDestinationDescription(destination);
                     removeSourceMarker();
                     addSourceCircle();
                     sourceLevel = route.getSourceLevel();
@@ -364,6 +455,65 @@ public class MapUIElementsManager {
                     ProgressBar progressBar = ((MapsActivity)(context)).findViewById(R.id.progressBar2);
                     progressBar.setVisibility(ProgressBar.GONE);
                     addRouteMarkers(sourceLevel);
+
+
+
+                    ArrayList<String> instructions = MapsActivity.instructions;
+                    ArrayList<LatLng> waypoints = MapsActivity.waypoints;
+                    Queue<RouteInstruction> instructionQueue = MapsActivity.routeInstructionQueue;
+                    routeInstructionsFinal = new LinkedList<>();
+                    String currInstruction = "";
+                    LatLng prevPoint = null;
+                    int index = 0;
+                    Log.i(TAG, "Number of waypoints: " + waypoints.size());
+                    RouteInstruction routeInstruction = null;
+//                    for (LatLng point: waypoints) {
+                    while (!instructionQueue.isEmpty()) {
+                        routeInstruction = instructionQueue.poll();
+                        LatLng point = routeInstruction.getPoint();
+                        if (prevPoint != null) {
+                            if (prevPoint.equals(point)) {
+                                currInstruction += routeInstruction.getInstruction();
+//                                currInstruction += instructions.get(index);
+                            } else {
+                                MarkerOptions options = new MarkerOptions()
+                                        .position(prevPoint)
+                                        .title(currInstruction);
+
+                                mMap.addMarker(options);
+                                tts.speak(currInstruction, TextToSpeech.QUEUE_ADD, null);
+                                currInstruction = routeInstruction.getInstruction() + ", ";
+                                routeInstructionsFinal.add(new RouteInstruction(currInstruction, prevPoint, routeInstruction.getLevel()));
+//                                currInstruction = instructions.get(index) + ", ";
+                            }
+                        } else {
+//                            currInstruction = instructions.get(index);
+                            currInstruction = routeInstruction.getInstruction();
+                            MarkerOptions options = new MarkerOptions()
+                                    .position(point)
+                                    .title(currInstruction);
+
+                            mMap.addMarker(options);
+                            tts.speak(currInstruction, TextToSpeech.QUEUE_ADD, null);
+                            routeInstructionsFinal.add(new RouteInstruction(currInstruction, point, routeInstruction.getLevel()));
+
+                        }
+                        prevPoint = point;
+                        index++;
+                    }
+                    if (prevPoint != null) {
+                        currInstruction = routeInstruction.getInstruction();
+//                        currInstruction = instructions.get(index - 1);
+                        MarkerOptions options = new MarkerOptions()
+                                .position(prevPoint)
+                                .title(currInstruction);
+
+                        mMap.addMarker(options);
+                        tts.speak(currInstruction, TextToSpeech.QUEUE_ADD, null);
+                        routeInstructionsFinal.add(new RouteInstruction(currInstruction, prevPoint, routeInstruction.getLevel()));
+
+                    }
+
                 }
             });
         }
@@ -414,18 +564,6 @@ public class MapUIElementsManager {
         }
     }
 
-    public LatLngWithTags getDestination() {
-//        String destinationName = autoCompleteDestination.getText().toString();
-//        destinationName = destinationName.substring(0, destinationName.length() - 1);
-//        Toast.makeText(this, "Destination: " + destinationName, Toast.LENGTH_LONG).show();
-//        target = findDestinationFromId(destinationName);
-        if (target != null) {
-            return target;
-        } else {
-            return null;
-        }
-    }
-
     public void moveCameraToStartingPosition(LatLng minPoint, LatLng maxPoint) {
         LatLngBounds routePosition = new LatLngBounds(
                 minPoint, maxPoint);
@@ -436,4 +574,10 @@ public class MapUIElementsManager {
 //        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(source.getLatlng(), 18));
     }
 
+    @Override
+    public void onInit(int status) {
+        if (status == TextToSpeech.SUCCESS) {
+            tts.setLanguage(Locale.US);
+        }
+    }
 }

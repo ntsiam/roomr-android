@@ -12,6 +12,7 @@ public class Route {
     private int minRouteLevel;
     private int sourceLevel;
     private HashMap<Integer, ArrayList<MarkerOptions>> stairMarkers;
+    private ArrayList<String> instructions;
 
     public Route(HashMap<Integer, ArrayList<PolylineOptions>> routeHashMapForLevels, int maxRouteLevel, int minRouteLevel, int sourceLevel,
                  HashMap<Integer, ArrayList<MarkerOptions>> stairMarkers) {
@@ -42,6 +43,14 @@ public class Route {
         return routeHashMapForLevels;
     }
 
+    public void setInstructions(ArrayList<String> instructions) {
+        this.instructions = instructions;
+    }
+
+    public ArrayList<String> getInstructions() {
+        return instructions;
+    }
+
     public int getMaxRouteLevel() {
         return maxRouteLevel;
     }
@@ -53,6 +62,7 @@ public class Route {
     public int getSourceLevel() {
         return sourceLevel;
     }
+
 
     public HashMap<Integer, ArrayList<MarkerOptions>> getStairMarkers() {
         return stairMarkers;

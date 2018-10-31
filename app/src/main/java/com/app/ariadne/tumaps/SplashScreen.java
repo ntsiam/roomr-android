@@ -7,6 +7,9 @@ import android.os.Handler;
 
 import com.app.ariadne.tumrfmap.R;
 
+/**
+ * UNUSED
+ */
 public class SplashScreen extends Activity {
 
     // Splash screen timer

@@ -30,8 +30,7 @@ public class MapsConfiguration {
     private final LatLngBounds MAP_BOUNDS = new LatLngBounds(
             new LatLng(47.8173, 11.063), new LatLng(48.5361, 12.062));
     private final int INITIAL_ZOOM = 14;
-
-
+    private final int MIN_ZOOM_FOR_INDOOR_MAPS = 15;
 
     public static MapsConfiguration getInstance() {
         return ourInstance;
@@ -58,9 +57,11 @@ public class MapsConfiguration {
         return MAP_BOUNDS;
     }
 
+    public int getMinZoomForIndoorMaps() { return MIN_ZOOM_FOR_INDOOR_MAPS; }
+
     /**
      * This method needs to be updated for every new building that follows a new naming pattern.
-     * It is assumed that the level of the target is encoded in its name.
+     * It is assumed that the level of the destination is encoded in its name.
      * @param id
      * @return
      */

@@ -34,7 +34,7 @@ public class GeoJsonMap {
     public static ArrayList<ArrayList<LatLngWithTags>> routablePath;
     ArrayList<ArrayList<LatLng>> steps;
     public static ArrayList<LatLngWithTags> targetPointsTagged; //This stores the possible targets for routing, including their ids and their Latlng coordinates.
-    public static ArrayList<String> targetPointsIds; //This stores the target ids for routing that are displayed in the dropdown list on the screen
+    public static ArrayList<String> targetPointsIds; //This stores the destination ids for routing that are displayed in the dropdown list on the screen
     public static ArrayList<String> sourcePointsIds; //This stores the source ids for routing. They may be redundant.
     private MapSources mapSources;
     HashMap<String, Entrance> entranceHashMap;
@@ -112,7 +112,6 @@ public class GeoJsonMap {
         targetPointsTagged = new ArrayList<>();
         targetPointsIds = new ArrayList<>();
         sourcePointsIds = new ArrayList<>();
-
         targetPointsTaggedForEachBuilding = new ArrayList<>();
         targetPointsIdsForEachBuilding = new ArrayList<>();
         sourcePointsIdsForEachBuilding = new ArrayList<>();
@@ -280,7 +279,7 @@ public class GeoJsonMap {
                 targetLatLngListWithLevels.add(new ArrayList<ArrayList<LatLngWithTags>>());
             }
             ArrayList<LatLngWithTags> latLngWithTags;
-            if (levels.size() > 1) { // TODO: Assume even more than 2 levels
+            if (levels.size() > 1) { // TODO: Assume even more than 2 levels - necessary?
                 latLngWithTags = LatLngWithTags.fromLatLngToLatLngWithTagsArrayList(targetLatLngList, String.valueOf(levels.get(0)));
                 targetLatLngListWithLevels.get(levels.get(1)).add(latLngWithTags);
                 ArrayList<LatLngWithTags> latLngWithTags1 = LatLngWithTags.fromLatLngToLatLngWithTagsArrayList(targetLatLngList, String.valueOf(levels.get(1)));
