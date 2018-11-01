@@ -7,8 +7,10 @@ import android.graphics.Point;
 import android.os.Handler;
 import android.speech.tts.TextToSpeech;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -78,7 +80,15 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
     ImageButton cancelButton;
     TextToSpeech tts;
     public Queue<RouteInstruction> routeInstructionsFinal;
+    public ArrayList<RouteInstruction> routeInstructionsArrayList;
     ListView instructionList;
+    ArrayList<String> instructions = new ArrayList<>();
+    ArrayList<LatLng> waypoints = new ArrayList<>();
+    ArrayAdapter adapterForInstructions;
+    Marker instructionMarker = null;
+    ArrayList<String> finalInstructions;
+
+
 
 
 
@@ -89,40 +99,92 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
         this.geoJsonMap = geoJsonMap;
         areMapElementsVisible = true;
         descriptionLayout = ((MapsActivity) context).findViewById(R.id.targetDescriptionLayout);
-        descriptionLayout.setOnClickListener(new View.OnClickListener() {
+        View.OnClickListener onClickListener = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 final float scale = context.getResources().getDisplayMetrics().density;
-                Log.i(TAG, "Clicked on Description Layout");
+                Log.i(TAG, "Clicked on Description Layout, number of elements: " + instructionList.getAdapter().getCount());
                 ViewGroup.LayoutParams params = v.getLayoutParams();
-// Changes the height and width to the specified *pixels*
                 if (instructionList.getAdapter().getCount() > 0) {
                     int dps = 150;
+                    // Changes the height and width to the specified *pixels*
                     int pixels = (int) (dps * scale + 0.5f);
                     Log.i(TAG, "Height: " + params.height);
-                    if (params.height > pixels || params.height < 0) {
-                        pixels = (int) (150 * scale + 0.5f);
-                        params.height = pixels;
-                        v.setLayoutParams(params);
+//                    if (params.height > pixels || params.height < 0) {
+                    pixels = (int) (150 * scale + 0.5f);
+                    params.height = pixels;
+                    ArrayAdapter tempAdapterForInstructions =  new ArrayAdapter<>(context, android.R.layout.simple_dropdown_item_1line, new ArrayList());
+                    instructionList.setAdapter(tempAdapterForInstructions);
+//                    } else {
+//                        pixels = (int) (400 * scale + 0.5f);
+////                        params.height = pixels;
+//                        params.height = -2; // wrap content?
+//                    }n
+                } else {
+                    instructionList.setAdapter(adapterForInstructions);
+                    if (instructionList.getAdapter().getCount() > 0) {
+                        params.height = -2; // wrap content?
                     } else {
-                        pixels = (int) (400 * scale + 0.5f);
-//                        params.height = pixels;
-                        params.height = -2;
+                        int pixels = (int) (150 * scale + 0.5f);
+                        params.height = pixels;
                     }
                 }
                 v.setLayoutParams(params);
             }
-        });
+        };
+
+        descriptionLayout.setOnClickListener(onClickListener);
+//        descriptionLayout.setOnTouchListener(new View.OnTouchListener() {
+//            @Override
+//            public boolean onTouch(View v, MotionEvent event) {
+//                Log.i(TAG,"Touched description layout");
+//                int eventaction = event.getActionMasked();
+//                ViewGroup.LayoutParams params = v.getLayoutParams();
+//                final float scale = context.getResources().getDisplayMetrics().density;
+//
+//
+//                switch (eventaction) {
+//                    case MotionEvent.ACTION_DOWN:
+//                        Log.i(TAG, "Motionevent down");
+//                        int pixels = (int) (150 * scale + 0.5f);
+//                        params.height = pixels;
+//                        v.setLayoutParams(params);
+//                        break;
+//                    case MotionEvent.ACTION_UP:
+//                        Log.i(TAG, "Motionevent up");
+//                        params.height = -2;
+//                        v.setLayoutParams(params);
+//                        break;
+//                }
+//                v.setLayoutParams(params);
+//                return false;
+//            }
+//        });
         destinationEditText = ((MapsActivity) context).findViewById(R.id.findDestination);
         cancelButton = ((MapsActivity) context).findViewById(R.id.cancel_button);
 
         tts = new TextToSpeech(context, this);
         instructionList = ((MapsActivity) context).findViewById(R.id.instruction_list);
-        ArrayAdapter adapterForInstructions =  new ArrayAdapter<>(context, android.R.layout.simple_dropdown_item_1line, new ArrayList());
+        adapterForInstructions =  new ArrayAdapter<>(context, android.R.layout.simple_dropdown_item_1line, new ArrayList());
         instructionList.setAdapter(adapterForInstructions);
 
     }
 
+    private void removeInstructionMarker() {
+        if (instructionMarker != null) {
+            instructionMarker.remove();
+        }
+        instructionMarker = null;
+    }
+
+    private void addNewInstructionMarker(int index) {
+        RouteInstruction routeInstruction = routeInstructionsArrayList.get(index);
+        MarkerOptions options = new MarkerOptions()
+                .position(routeInstruction.getPoint())
+                .title(routeInstruction.getInstruction());
+        instructionMarker = mMap.addMarker(options);
+        instructionMarker.showInfoWindow();
+    }
 
     public LatLngWithTags getSource() {
         return source;
@@ -250,14 +312,10 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
             areMapElementsVisible = false;
 
             if (descriptionLayout.getVisibility() == LinearLayout.VISIBLE) {
-//                ViewGroup.LayoutParams params = descriptionLayout.getLayoutParams();
-//                params.height = 50;
-//                descriptionLayout.setLayoutParams(params);
-//                //Log.i(TAG, "clicked on map: " + latLng.toString());
-//                descriptionLayout.setOnClickListener(this);
                 descriptionLayout.setVisibility(LinearLayout.GONE);
                 destinationEditText.setVisibility(EditText.GONE);
                 cancelButton.setVisibility(ImageButton.GONE);
+                removeInstructionMarker();
             }
 
         } else {
@@ -283,6 +341,7 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
     }
 
     public void addMarkerAndZoomCameraOnTarget(LatLngWithTags target) {
+        removeInstructionMarker();
         removeDestinationMarker();
         Projection projection = mMap.getProjection();
         Point mapPoint = projection.toScreenLocation(target.getLatlng());
@@ -405,6 +464,7 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
 
     public void removeAllDestinationElementsFromMap() {
         destination = null;
+        removeInstructionMarker();
         removeDestinationMarker();
         removeDestinationDescription();
         removeSourceCircle();
@@ -413,6 +473,13 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
         routePolylineOptions = null;
         resetRouteMarkers();
         route = null;
+        instructions = new ArrayList<>();
+        waypoints = new ArrayList<>();
+        adapterForInstructions =  new ArrayAdapter<>(context, android.R.layout.simple_dropdown_item_1line, new ArrayList());
+        instructionList.setAdapter(adapterForInstructions);
+        instructionList.setVisibility(ListView.GONE);
+        ViewGroup.LayoutParams params = descriptionLayout.getLayoutParams();
+        toggleInstructions(true);
     }
 
     public void removeDestinationMarker() {
@@ -437,6 +504,7 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
         descriptionText.setText("");
         TextView descriptionTextBody = activity.findViewById(R.id.targetDescriptionBody);
         descriptionTextBody.setText("");
+        removeInstructionMarker();
     }
 
     public void addDestinationDescription(LatLngWithTags latLngWithTags) {
@@ -492,10 +560,12 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
 
 
 
-                    ArrayList<String> instructions = MapsActivity.instructions;
-                    ArrayList<LatLng> waypoints = MapsActivity.waypoints;
+                    instructions = MapsActivity.instructions;
+                    waypoints = MapsActivity.waypoints;
                     Queue<RouteInstruction> instructionQueue = MapsActivity.routeInstructionQueue;
                     routeInstructionsFinal = new LinkedList<>();
+                    routeInstructionsArrayList = new ArrayList<>();
+                    finalInstructions = new ArrayList<>();
                     String currInstruction = "";
                     LatLng prevPoint = null;
                     int index = 0;
@@ -504,32 +574,37 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
 //                    for (LatLng point: waypoints) {
                     while (!instructionQueue.isEmpty()) {
                         routeInstruction = instructionQueue.poll();
+                        Log.i(TAG, "Instruction: " + routeInstruction.getInstruction());
                         LatLng point = routeInstruction.getPoint();
                         if (prevPoint != null) {
                             if (prevPoint.equals(point)) {
                                 currInstruction += routeInstruction.getInstruction();
 //                                currInstruction += instructions.get(index);
                             } else {
-                                MarkerOptions options = new MarkerOptions()
-                                        .position(prevPoint)
-                                        .title(currInstruction);
-
-                                mMap.addMarker(options);
+//                                MarkerOptions options = new MarkerOptions()
+//                                        .position(prevPoint)
+//                                        .title(currInstruction);
+//
+//                                mMap.addMarker(options);
                                 tts.speak(currInstruction, TextToSpeech.QUEUE_ADD, null);
-                                currInstruction = routeInstruction.getInstruction();
                                 routeInstructionsFinal.add(new RouteInstruction(currInstruction, prevPoint, routeInstruction.getLevel()));
+                                routeInstructionsArrayList.add(new RouteInstruction(currInstruction, prevPoint, routeInstruction.getLevel()));
+                                finalInstructions.add(currInstruction);
+                                currInstruction = routeInstruction.getInstruction();
 //                                currInstruction = instructions.get(index) + ", ";
                             }
                         } else {
 //                            currInstruction = instructions.get(index);
                             currInstruction = routeInstruction.getInstruction();
-                            MarkerOptions options = new MarkerOptions()
-                                    .position(point)
-                                    .title(currInstruction);
-
-                            mMap.addMarker(options);
-                            tts.speak(currInstruction, TextToSpeech.QUEUE_ADD, null);
-                            routeInstructionsFinal.add(new RouteInstruction(currInstruction, point, routeInstruction.getLevel()));
+//                            MarkerOptions options = new MarkerOptions()
+//                                    .position(point)
+//                                    .title(currInstruction);
+//
+//                            mMap.addMarker(options);
+//                            tts.speak(currInstruction, TextToSpeech.QUEUE_ADD, null);
+//                            routeInstructionsFinal.add(new RouteInstruction(currInstruction, point, routeInstruction.getLevel()));
+//                            routeInstructionsArrayList.add(new RouteInstruction(currInstruction, point, routeInstruction.getLevel()));
+//                            finalInstructions.add(currInstruction);
 
                         }
                         prevPoint = point;
@@ -538,32 +613,57 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
                     if (prevPoint != null) {
                         currInstruction = routeInstruction.getInstruction();
 //                        currInstruction = instructions.get(index - 1);
-                        MarkerOptions options = new MarkerOptions()
-                                .position(prevPoint)
-                                .title(currInstruction);
-
-                        mMap.addMarker(options);
+//                        MarkerOptions options = new MarkerOptions()
+//                                .position(prevPoint)
+//                                .title(currInstruction);
+//
+//                        mMap.addMarker(options);
                         tts.speak(currInstruction, TextToSpeech.QUEUE_ADD, null);
                         routeInstructionsFinal.add(new RouteInstruction(currInstruction, prevPoint, routeInstruction.getLevel()));
+                        routeInstructionsArrayList.add(new RouteInstruction(currInstruction, prevPoint, routeInstruction.getLevel()));
+                        finalInstructions.add(currInstruction);
 
                     }
 
 
                     // Show instructions on ListView
-                    ArrayAdapter adapterForInstructions =  new ArrayAdapter<>(context, android.R.layout.simple_dropdown_item_1line, instructions);
+                    adapterForInstructions =  new ArrayAdapter<>(context, android.R.layout.simple_dropdown_item_1line, finalInstructions);
                     instructionList.setAdapter(adapterForInstructions);
-                    instructionList.setVisibility(ListView.VISIBLE);
-//                    if (instructionList.getAdapter().getCount() > 0) {
-//                        Log.i(TAG, "Adapter has elements");
-//                        descriptionLayout.setMinimumHeight(318);
-//                    }
+                    if (instructionList.getAdapter().getCount() > 0) {
+                        instructionList.setVisibility(ListView.VISIBLE);
+                        AdapterView.OnItemClickListener onItemClickListener = new AdapterView.OnItemClickListener() {
+                            @Override
+                            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                                removeInstructionMarker();
+                                addNewInstructionMarker(position);
+//                                moveCameraToStartingPosition(routeInstructionsArrayList.get(position).getPoint(), routeInstructionsArrayList.get(position).getPoint());
 
+                            }
+                        };
 
+                        instructionList.setOnItemClickListener(onItemClickListener);
+                        toggleInstructions(false);
+                    } else {
+                        instructionList.setVisibility(ListView.GONE);
+                        toggleInstructions(true);
+                    }
 
                 }
             });
         }
 
+    }
+
+
+    private void toggleInstructions(boolean actionHide) {
+        ViewGroup.LayoutParams params = descriptionLayout.getLayoutParams();
+        if (actionHide) {
+            final float scale = context.getResources().getDisplayMetrics().density;
+            params.height = (int) (150 * scale + 0.5f);
+        } else {
+            params.height = -2;
+        }
+        descriptionLayout.setLayoutParams(params);
     }
 
     public void addRouteMarkers(int level) {

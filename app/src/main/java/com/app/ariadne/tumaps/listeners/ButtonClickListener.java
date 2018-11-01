@@ -133,6 +133,7 @@ public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCa
         ImageButton cancelButton = ((MapsActivity)(context)).findViewById(R.id.cancel_button);
         cancelButton.setVisibility(Button.INVISIBLE);
 
+
     }
 
     public void showDirectionsButtons() {
