@@ -22,6 +22,7 @@ import android.widget.TextView;
 import com.app.ariadne.tumaps.MapsConfiguration;
 import com.app.ariadne.tumaps.geojson.GeoJsonHelper;
 import com.app.ariadne.tumaps.MapsActivity;
+import com.app.ariadne.tumaps.listeners.SensorChangeListener;
 import com.app.ariadne.tumaps.models.RouteInstruction;
 import com.app.ariadne.tumrfmap.R;
 import com.app.ariadne.tumaps.models.Entrance;
@@ -87,6 +88,9 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
     ArrayAdapter adapterForInstructions;
     Marker instructionMarker = null;
     ArrayList<String> finalInstructions;
+    private SensorChangeListener sensorChangeListener;
+    PositionManager positionManager;
+
 
 
 
@@ -163,21 +167,22 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
         destinationEditText = ((MapsActivity) context).findViewById(R.id.findDestination);
         cancelButton = ((MapsActivity) context).findViewById(R.id.cancel_button);
 
-        tts = new TextToSpeech(context, this);
+//        tts = new TextToSpeech(context, this);
         instructionList = ((MapsActivity) context).findViewById(R.id.instruction_list);
         adapterForInstructions =  new ArrayAdapter<>(context, android.R.layout.simple_dropdown_item_1line, new ArrayList());
         instructionList.setAdapter(adapterForInstructions);
+        sensorChangeListener = new SensorChangeListener(context);
 
     }
 
-    private void removeInstructionMarker() {
+    public void removeInstructionMarker() {
         if (instructionMarker != null) {
             instructionMarker.remove();
         }
         instructionMarker = null;
     }
 
-    private void addNewInstructionMarker(int index) {
+    public void addNewInstructionMarker(int index) {
         RouteInstruction routeInstruction = routeInstructionsArrayList.get(index);
         MarkerOptions options = new MarkerOptions()
                 .position(routeInstruction.getPoint())
@@ -185,6 +190,15 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
         instructionMarker = mMap.addMarker(options);
         instructionMarker.showInfoWindow();
     }
+
+    public void addNewInstructionMarkerGivenInstruction(RouteInstruction routeInstruction) {
+        MarkerOptions options = new MarkerOptions()
+                .position(routeInstruction.getPoint())
+                .title(routeInstruction.getInstruction());
+        instructionMarker = mMap.addMarker(options);
+        instructionMarker.showInfoWindow();
+    }
+
 
     public LatLngWithTags getSource() {
         return source;
@@ -378,8 +392,8 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
             }
             routePolylineOptionsGray.clickable(true);
         }
-        removeSourceCircle();
-        addSourceCircle();
+//        removeSourceCircle();
+//        addSourceCircle(source.getLatlng());
     }
 
     private void addPathToPolylineOptionsGray(int index, int currentIndex, PolylineOptions polylineOptions) {
@@ -406,9 +420,12 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
         }
     }
 
-    public void addSourceCircle() {
+    public void addSourceCircle(LatLng sourceLatLng) {
+        if (sourceMarker != null) {
+            removeSourceCircle();
+        }
         CircleOptions circleOptions = new CircleOptions()
-                .center(source.getLatlng())
+                .center(sourceLatLng)
                 .radius(1.0) // radius in meters
                 .fillColor(0xBB00CCFF) //this is a half transparent blue, change "88" for the transparency
                 .strokeColor(Color.BLUE) //The stroke (border) is blue
@@ -480,7 +497,10 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
         instructionList.setVisibility(ListView.GONE);
         ViewGroup.LayoutParams params = descriptionLayout.getLayoutParams();
         toggleInstructions(true);
+        sensorChangeListener.cancelNavigation();
+
     }
+
 
     public void removeDestinationMarker() {
         if (destinationMarker != null) {
@@ -533,6 +553,7 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
         if (route != null && route.getRouteHashMapForLevels()!= null && route.getRouteHashMapForLevels().get(route.getSourceLevel())
                 != null && route.getRouteHashMapForLevels().get(route.getSourceLevel()).size() > 0) {
             routePolylineOptions = route.getRouteHashMapForLevels().get(route.getSourceLevel()).get(0);
+            positionManager = new PositionManager(context, this);
 
             routeHandler.post(new Runnable() {
                 public void run() {
@@ -550,7 +571,7 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
                     addDestinationMarker(destination);
                     addDestinationDescription(destination);
                     removeSourceMarker();
-                    addSourceCircle();
+                    addSourceCircle(source.getLatlng());
                     sourceLevel = route.getSourceLevel();
                     buttonClickListener.setFloorAsChecked(sourceLevel);
 
@@ -586,7 +607,7 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
 //                                        .title(currInstruction);
 //
 //                                mMap.addMarker(options);
-                                tts.speak(currInstruction, TextToSpeech.QUEUE_ADD, null);
+//                                tts.speak(currInstruction, TextToSpeech.QUEUE_ADD, null);
                                 routeInstructionsFinal.add(new RouteInstruction(currInstruction, prevPoint, routeInstruction.getLevel()));
                                 routeInstructionsArrayList.add(new RouteInstruction(currInstruction, prevPoint, routeInstruction.getLevel()));
                                 finalInstructions.add(currInstruction);
@@ -618,7 +639,7 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
 //                                .title(currInstruction);
 //
 //                        mMap.addMarker(options);
-                        tts.speak(currInstruction, TextToSpeech.QUEUE_ADD, null);
+//                        tts.speak(currInstruction, TextToSpeech.QUEUE_ADD, null);
                         routeInstructionsFinal.add(new RouteInstruction(currInstruction, prevPoint, routeInstruction.getLevel()));
                         routeInstructionsArrayList.add(new RouteInstruction(currInstruction, prevPoint, routeInstruction.getLevel()));
                         finalInstructions.add(currInstruction);
@@ -648,12 +669,22 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
                         toggleInstructions(true);
                     }
 
+//                    positionManager = new PositionManager(context, routeInstructionsFinal, getSource().getLatlng());
+                    positionManager.setRouteInstructionQueue(routeInstructionsFinal);
+                    positionManager.setInitialPosition(getSource().getLatlng());
+                    sensorChangeListener.setPositionManager(positionManager);
+                    sensorChangeListener.startNavigation();
+                    addNewInstructionMarker(0);
+
                 }
             });
         }
 
     }
 
+    public SensorChangeListener getSensorChangeListener() {
+        return sensorChangeListener;
+    }
 
     private void toggleInstructions(boolean actionHide) {
         ViewGroup.LayoutParams params = descriptionLayout.getLayoutParams();
@@ -720,10 +751,21 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
 //        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(source.getLatlng(), 18));
     }
 
+    public void moveCameraToPosition(LatLng minPoint, LatLng maxPoint, int zoom) {
+        LatLngBounds routePosition = new LatLngBounds(
+                minPoint, maxPoint);
+        //Log.i(TAG, "Southwest: " + minPoint);
+        //Log.i(TAG, "Northeast: " + maxPoint);
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(routePosition.getCenter(), zoom));
+
+//        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(source.getLatlng(), 18));
+    }
+
+
     @Override
     public void onInit(int status) {
         if (status == TextToSpeech.SUCCESS) {
-            tts.setLanguage(Locale.US);
+//            tts.setLanguage(Locale.US);
         }
     }
 }

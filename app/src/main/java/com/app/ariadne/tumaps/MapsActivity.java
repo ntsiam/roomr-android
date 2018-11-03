@@ -16,8 +16,10 @@ import com.app.ariadne.tumaps.geojson.GeoJSONDijkstra;
 import com.app.ariadne.tumaps.geojson.GeoJsonMap;
 import com.app.ariadne.tumaps.listeners.ButtonClickListener;
 import com.app.ariadne.tumaps.listeners.MapClickListener;
+import com.app.ariadne.tumaps.listeners.SensorChangeListener;
 import com.app.ariadne.tumaps.map.MapManager;
 import com.app.ariadne.tumaps.map.MapUIElementsManager;
+import com.app.ariadne.tumaps.map.PositionManager;
 import com.app.ariadne.tumaps.models.Route;
 import com.app.ariadne.tumaps.models.RouteInstruction;
 import com.app.ariadne.tumrfmap.R;
@@ -194,6 +196,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 LatLng minPoint = new LatLng(dijkstraForEachBuilding.get(targetBuildingIndex).minRouteLat, dijkstraForEachBuilding.get(targetBuildingIndex).minRouteLng);
                 LatLng maxPoint = new LatLng(dijkstraForEachBuilding.get(targetBuildingIndex).maxRouteLat, dijkstraForEachBuilding.get(targetBuildingIndex).maxRouteLng);
                 mapUIElementsManager.setRoutePathOnMap(route, routeHandler, minPoint, maxPoint);
+
             } else {
                 final View view = findViewById(R.id.targetDescriptionLayout);
                 routeHandler.post(new Runnable() {
@@ -291,5 +294,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         getFragmentManager().beginTransaction()
                 .replace(android.R.id.content, new SettingsFragment())
                 .commit();
+    }
+
+    protected void onResume() {
+        super.onResume();
+        if (mapUIElementsManager != null) {
+            mapUIElementsManager.getSensorChangeListener().registerListeners();
+        }
+    }
+
+    protected void onPause() {
+        super.onPause();
+        if (mapUIElementsManager != null) {
+            mapUIElementsManager.getSensorChangeListener().unregisterListeners();
+        }
     }
 }

@@ -203,6 +203,7 @@ public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCa
             ((MapsActivity)(context)).onFindOriginDestinationClick();
         } else if (view.getId() == R.id.revert) {
             ((MapsActivity)(context)).onFindOriginDestinationClick();
+            mapUIElementsManager.removeAllDestinationElementsFromMap();
         } else if (view.getId() == R.id.targetDescriptionLayout) {
 //            LinearLayout descriptionLayout = findViewById(R.id.targetDescriptionLayout);
 //            descriptionLayout.setOnClickListener(null);

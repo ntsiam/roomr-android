@@ -234,15 +234,15 @@ public class GeoJSONDijkstra {
                             if (currentHeading - prevHeading < 0) { // Turned left
                                 if (currentHeading - prevHeading > -180) {
                                     if (currentHeading - prevHeading < -50) {
-                                        instruction = "Turn left";
+                                        instruction = "Turn left. ";
                                     } else {
-                                        instruction = "Turn slightly left";
+                                        instruction = "Turn slightly left. ";
                                     }
                                 } else {
                                     if (360 - (prevHeading - currentHeading) > 50) {
-                                        instruction = "Turn right";
+                                        instruction = "Turn right. ";
                                     } else {
-                                        instruction = "Turn slightly right";
+                                        instruction = "Turn slightly right. ";
                                     }
                                 }
                                 routeInstructions.add(instruction);
@@ -293,7 +293,7 @@ public class GeoJSONDijkstra {
 
 
 
-                        instruction = "Go " + (prevLevel < level ? "up " : "down ") + String.valueOf(Math.abs(prevLevel - level)) + " levels";
+                        instruction = "Go " + (prevLevel < level ? "up " : "down ") + String.valueOf(Math.abs(prevLevel - level)) + ((Math.abs(prevLevel - level) == 1) ? " level. " : " levels. ");
                         currentDistance = SphericalUtil.computeDistanceBetween(prevPoint, nextPoint);
                         prevHeading = SphericalUtil.computeHeading(prevPoint, nextPoint);
 
