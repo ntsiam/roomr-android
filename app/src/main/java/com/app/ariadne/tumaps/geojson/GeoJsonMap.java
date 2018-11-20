@@ -1,8 +1,11 @@
 package com.app.ariadne.tumaps.geojson;
 
+import android.arch.persistence.room.Room;
 import android.content.Context;
 import android.graphics.Color;
 
+import com.app.ariadne.tumaps.db.DAOs.AppDatabase;
+import com.app.ariadne.tumaps.db.models.TargetPointTagged;
 import com.app.ariadne.tumaps.models.Entrance;
 import com.app.ariadne.tumaps.models.MapSources;
 import com.google.android.gms.maps.GoogleMap;
@@ -57,9 +60,11 @@ public class GeoJsonMap {
         buildingIdToName.put("mi", "Mathematics Informatics");
         buildingIdToName.put("mw", "Mechanical Engineering");
         buildingIdToName.put("mc", "Main Campus");
+        buildingIdToName.put("hypermotion", "Hypermotion");
         buildingNameToId.put("Mathematics Informatics", "mi");
         buildingNameToId.put("Mechanical Engineering", "mw");
         buildingNameToId.put("Main Campus", "mc");
+        buildingNameToId.put("Hypermotion", "hypermotion");
         mapSources = new MapSources();
     }
 
@@ -82,6 +87,11 @@ public class GeoJsonMap {
 //            Log.i(TAG, "Error while loading Geojson data!!");
             e.printStackTrace();
         }
+//        AppDatabase db = Room.databaseBuilder(appContext,
+//                AppDatabase.class, "tumaps").build();
+//        ArrayList<TargetPointTagged> targetPointTaggeds = TargetPointTagged.fromLatLngWithTagsToTargetPointTaggedArrayList(targetPointsTagged);
+//        db.dao().insertAll(targetPointTaggeds);
+
     }
 
     private void addAllBuildingTopologies(Context appContext) throws IOException, JSONException {

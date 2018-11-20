@@ -36,6 +36,7 @@ public class PositionManager implements TextToSpeech.OnInitListener {
         tts = new TextToSpeech(context, this);
         isCloserToNextInstruction = false;
 
+
     }
 
     public PositionManager(Context context, Queue<RouteInstruction> routeInstructionQueue, LatLng initialPosition) {
@@ -67,9 +68,15 @@ public class PositionManager implements TextToSpeech.OnInitListener {
         instructionIndex = 0;
         mapUIElementsManager.addSourceCircle(currentPosition);
         Log.i(TAG, "First instruction: " + previousInstruction.getInstruction());
-        tts.speak(previousInstruction.getInstruction(), TextToSpeech.QUEUE_ADD, null);
+//        tts.speak(previousInstruction.getInstruction().toString(), TextToSpeech.QUEUE_FLUSH, null);
+//        tts.speak("This is the first instruction", TextToSpeech.QUEUE_ADD, null);
 
 
+
+    }
+
+    public void playFirstInstruction() {
+        tts.speak(previousInstruction.getInstruction(), TextToSpeech.QUEUE_ADD,null);
     }
 
     public void cancelNavigation() {

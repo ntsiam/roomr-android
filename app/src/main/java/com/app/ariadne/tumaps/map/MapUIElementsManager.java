@@ -251,14 +251,15 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
     public void handleClickOnMap(LatLng latLngClicked) {
         if (level != null) {
             boolean isClickHandled = false;
-            int levelToShow = Integer.valueOf(level);
+            String tempLevel = level.replace("n", "-");
+            int levelToShow = Integer.valueOf(tempLevel);
             if (level != null && !level.equals("") && route != null) {
 //            Log.i("OnClick", "mapUIElementsManager.level is defined");
 //                Log.i("OnClick", "mapUIElementsManager.route is defined");
                 for (int i = route.getMinRouteLevel(); i <= route.getMaxRouteLevel(); i++) {
                     levelToShow = findLevelToShowBasedOnUserClickedLatLng(i, latLngClicked, levelToShow);
                 }
-                if (levelToShow != Integer.valueOf(level)) {
+                if (levelToShow != Integer.valueOf(tempLevel)) {
                     buttonClickListener.setFloorAsChecked(levelToShow);
                     addRouteLineFromPolyLineOptions(levelToShow);
                     isClickHandled = true;
@@ -501,7 +502,6 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
 
     }
 
-
     public void removeDestinationMarker() {
         if (destinationMarker != null) {
             destinationMarker.remove();
@@ -540,7 +540,9 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
             TextView descriptionText = activity.findViewById(R.id.targetDescriptionHeader);
             descriptionText.setText(String.format("%s, %s", GeoJsonMap.getRoomIdFromBuildingName(destination.getId()), entrance.getBuilding()));
             TextView descriptionTextBody = activity.findViewById(R.id.targetDescriptionBody);
-            descriptionTextBody.setText(String.format("%s, %s, %s", entrance.getAddress(), entrance.getPlz(), entrance.getCity()));
+            if (!entrance.getAddress().equals("")) {
+                descriptionTextBody.setText(String.format("%s, %s, %s", entrance.getAddress(), entrance.getPlz(), entrance.getCity()));
+            }
         } else {
 
             descriptionLayout.setVisibility(LinearLayout.GONE);
@@ -673,9 +675,8 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
                     positionManager.setRouteInstructionQueue(routeInstructionsFinal);
                     positionManager.setInitialPosition(getSource().getLatlng());
                     sensorChangeListener.setPositionManager(positionManager);
-                    sensorChangeListener.startNavigation();
                     addNewInstructionMarker(0);
-
+                    sensorChangeListener.startNavigation();
                 }
             });
         }

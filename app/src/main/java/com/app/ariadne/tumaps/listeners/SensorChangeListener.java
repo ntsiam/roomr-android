@@ -23,6 +23,8 @@ public class SensorChangeListener implements SensorEventListener {
     private final static String TAG = "SensorChangeListener";
     private SensorManager mSensorManager;
     private Sensor mStepSensor;
+    private Sensor mAccelerometerSensor;
+    private boolean firstInstructionHasNotBeenPlayed;
 
 
 
@@ -34,12 +36,14 @@ public class SensorChangeListener implements SensorEventListener {
         stepsTillNow = 0;
         isFirstTime = true;
         registerListeners();
+        firstInstructionHasNotBeenPlayed = true;
 
     }
 
     public void registerListeners() {
         initSensors();
         mSensorManager.registerListener(this, mStepSensor, SensorManager.SENSOR_DELAY_FASTEST);
+//        mSensorManager.registerListener(this, mAccelerometerSensor, SensorManager.SENSOR_DELAY_FASTEST);
     }
 
     public void unregisterListeners() {
@@ -49,6 +53,7 @@ public class SensorChangeListener implements SensorEventListener {
     private void initSensors() {
         mSensorManager = (SensorManager)mapsActivity.getSystemService(SENSOR_SERVICE);
         mStepSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER);
+//        mAccelerometerSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
     }
 
     public void setPositionManager(PositionManager positionManager) {
@@ -72,7 +77,16 @@ public class SensorChangeListener implements SensorEventListener {
 
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
-        Log.i(TAG, "Sensor update: " + sensorEvent.sensor.getName());
+//        Log.i(TAG, "Sensor update: " + sensorEvent.sensor.getName());
+        if (isFirstTime && positionManager != null && firstInstructionHasNotBeenPlayed) {
+            positionManager.playFirstInstruction();
+            firstInstructionHasNotBeenPlayed = false;
+            Log.i(TAG, "I should have said the first instruction");
+        } else if (positionManager == null){
+            Log.i(TAG, "position manager null");
+        } else if (firstInstructionHasNotBeenPlayed) {
+            Log.i(TAG, "first instruction has been played");
+        }
         if (hasNavigationStarted) {
             switch (sensorEvent.sensor.getType()) {
                 case Sensor.TYPE_STEP_COUNTER:
@@ -90,6 +104,7 @@ public class SensorChangeListener implements SensorEventListener {
         if (isFirstTime) {
             stepsTillNow = steps - 6;
             isFirstTime = false;
+
         }
         float newSteps = steps - stepsTillNow;
         if (newSteps > 0.0 && positionManager != null) {

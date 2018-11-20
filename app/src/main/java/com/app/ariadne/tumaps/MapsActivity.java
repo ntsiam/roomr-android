@@ -1,8 +1,11 @@
 package com.app.ariadne.tumaps;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
@@ -12,6 +15,7 @@ import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import com.app.ariadne.tumaps.db.models.WifiAPDetails;
 import com.app.ariadne.tumaps.geojson.GeoJSONDijkstra;
 import com.app.ariadne.tumaps.geojson.GeoJsonMap;
 import com.app.ariadne.tumaps.listeners.ButtonClickListener;
@@ -22,6 +26,7 @@ import com.app.ariadne.tumaps.map.MapUIElementsManager;
 import com.app.ariadne.tumaps.map.PositionManager;
 import com.app.ariadne.tumaps.models.Route;
 import com.app.ariadne.tumaps.models.RouteInstruction;
+import com.app.ariadne.tumaps.wifi.WifiScanner;
 import com.app.ariadne.tumrfmap.R;
 import com.app.ariadne.tumaps.listeners.ItemClickListener;
 import com.google.android.gms.maps.GoogleMap;
@@ -31,6 +36,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
 
 import java.util.ArrayList;
 import java.util.Queue;
@@ -54,6 +60,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public static ArrayList<LatLng> waypoints;
     public static Queue<RouteInstruction> routeInstructionQueue;
 
+    public static Polyline predictionRectanglePolyline;
+    public WifiManager wifi;
+    public WifiScanner wifiScanner;
+    public static ArrayList<WifiAPDetails> wifiAPDetailsList = new ArrayList<>();
+
 
     public static final int MY_PERMISSIONS_REQUEST_FINE_LOCATION = 1;
 
@@ -75,6 +86,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mapManager = new MapManager(this);
         geoJsonMap = new GeoJsonMap(mapManager.getMap());
         geoJsonMap.loadIndoorTopology(this);
+
 
     }
 
@@ -113,6 +125,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mapClickListener = new MapClickListener(mapUIElementsManager);
         mapManager.setOnMapClickListener(mapClickListener);
         itemClickListener = new ItemClickListener(this, mapUIElementsManager, buttonClickListener);
+
+        initWifiScanner();
 
     }
 
@@ -309,4 +323,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             mapUIElementsManager.getSensorChangeListener().unregisterListeners();
         }
     }
+
+    void initWifiScanner() {
+        requestPermissionToAccessLocation();
+        wifi = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            wifi.isDeviceToApRttSupported();
+        }
+        if (!wifi.isWifiEnabled()) {
+            Toast.makeText(getApplicationContext(), "wifi is disabled..enabling it", Toast.LENGTH_LONG).show();
+            wifi.setWifiEnabled(true);
+        }
+        wifiScanner = new WifiScanner(wifi, getApplicationContext());
+    }
+
 }
