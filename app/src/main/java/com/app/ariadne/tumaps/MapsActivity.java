@@ -11,8 +11,10 @@ import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.app.ariadne.tumaps.db.models.WifiAPDetails;
@@ -37,8 +39,15 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
+import com.google.firebase.database.DatabaseException;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
+import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Queue;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
@@ -129,6 +138,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         initWifiScanner();
 
     }
+
 
     public void cancelTarget(View view) {
         mapUIElementsManager.removeAllDestinationElementsFromMap();

@@ -30,11 +30,11 @@ public class MapsConfiguration {
 
     private MIDestinationIdAnalyzer miDestinationIdAnalyzer;
     private MWDestinationIdAnalyzer mwDestinationIdAnalyzer;
-//    private final LatLng MAP_CENTER = new LatLng(48.262534, 11.667992);
-    private final LatLng MAP_CENTER = new LatLng(50.11241390288, 8.64781737294);
+    private final LatLng MAP_CENTER = new LatLng(48.262534, 11.667992);
+//    private final LatLng MAP_CENTER = new LatLng(50.11241390288, 8.64781737294);
     private final LatLngBounds MAP_BOUNDS = new LatLngBounds(
-            new LatLng(48.5361, 8.443418), new LatLng(52.113844, 12.062));
-    //            new LatLng(47.8173, 11.063), new LatLng(48.5361, 12.062));
+//            new LatLng(48.5361, 8.443418), new LatLng(52.113844, 12.062));
+                new LatLng(47.8173, 11.063), new LatLng(48.5361, 12.062));
     private final int INITIAL_ZOOM = 14;
     private final int MIN_ZOOM_FOR_INDOOR_MAPS = 15;
 

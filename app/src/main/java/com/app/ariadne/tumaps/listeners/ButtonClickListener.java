@@ -9,6 +9,8 @@ import android.widget.ImageButton;
 import android.widget.ToggleButton;
 
 import com.app.ariadne.tumaps.MapsConfiguration;
+import com.app.ariadne.tumaps.RequestLocalizationTask;
+import com.app.ariadne.tumaps.db.models.WifiAPDetails;
 import com.app.ariadne.tumaps.geojson.IndoorBuildingBoundsAndFloors;
 import com.app.ariadne.tumaps.map.MapManager;
 import com.app.ariadne.tumaps.map.MapUIElementsManager;
@@ -34,6 +36,7 @@ public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCa
     private ToggleButton leveln4;
     private ArrayList<ToggleButton> floorButtonList;
     private Button directionsButton;
+    private Button localizationButton;
     private ImageButton revertButton;
     private EditText destinationEditText;
     private MapManager mapManager;
@@ -48,8 +51,10 @@ public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCa
         initFloorButtonList();
         MapsActivity mapsActivity = (MapsActivity)context;
         directionsButton = mapsActivity.findViewById(R.id.directions);
+        localizationButton = mapsActivity.findViewById(R.id.localization);
         revertButton = mapsActivity.findViewById(R.id.revert);
         directionsButton.setOnClickListener(this);
+        localizationButton.setOnClickListener(this);
         revertButton.setOnClickListener(this);
         destinationEditText = mapsActivity.findViewById(R.id.findDestination);
         boundsForIndoorButtons = MapsConfiguration.getInstance().getBoundsForIndoorButtons();
@@ -201,6 +206,8 @@ public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCa
             clickFloor(-4);
         } else if (view.getId() == R.id.directions) {
             ((MapsActivity)(context)).onFindOriginDestinationClick();
+        } else if (view.getId() == R.id.localization) {
+            mapManager.requestLocalizationWifi();
         } else if (view.getId() == R.id.revert) {
             ((MapsActivity)(context)).onFindOriginDestinationClick();
             mapUIElementsManager.removeAllDestinationElementsFromMap();
@@ -212,9 +219,13 @@ public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCa
 //            descriptionLayout.setLayoutParams(params);
 
         }
-        mapManager.addTileProvider(mapUIElementsManager.level);
+        if (view.getId() != R.id.localization && view.getId() != R.id.revert) {
+            mapManager.addTileProvider(mapUIElementsManager.level);
+        }
 
     }
+
+
 
     private void setButtonVisibilityBasedOnCameraPosition() {
         level4.setVisibility(Button.GONE);

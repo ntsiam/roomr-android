@@ -4,9 +4,13 @@ import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.support.v4.app.ActivityCompat;
+import android.util.Log;
 import android.widget.ArrayAdapter;
 
+import com.app.ariadne.tumaps.MapsActivity;
 import com.app.ariadne.tumaps.MapsConfiguration;
+import com.app.ariadne.tumaps.RequestLocalizationTask;
+import com.app.ariadne.tumaps.db.models.WifiAPDetails;
 import com.app.ariadne.tumaps.listeners.LocationButtonClickListener;
 import com.app.ariadne.tumaps.listeners.MapClickListener;
 import com.app.ariadne.tumaps.geojson.GeoJsonMap;
@@ -22,6 +26,8 @@ import com.google.android.gms.maps.model.TileOverlayOptions;
 import com.google.android.gms.maps.model.TileProvider;
 
 import java.util.ArrayList;
+
+import static com.app.ariadne.tumaps.MapsActivity.wifiAPDetailsList;
 
 
 public class MapManager {
@@ -78,6 +84,27 @@ public class MapManager {
         }
         mMap.setMyLocationEnabled(choice);
     }
+
+    public void requestLocalizationWifi() {
+
+        String url = "ec2-18-188-248-182.us-east-2.compute.amazonaws.com";
+        RequestLocalizationTask requestLocalizationTask = new RequestLocalizationTask(getMap(), (MapsActivity) context);
+        String request = "{\"prediction_type\": 0, \"position\":{\"wifiAPDetailsArrayList\":[";
+        if (wifiAPDetailsList.size() > 0) {
+            for (int i = 0; i < wifiAPDetailsList.size() - 1; i++) {
+                WifiAPDetails wifiAPDetails = wifiAPDetailsList.get(i);
+                request += "{\"macAddress\":\"" + wifiAPDetails.getMacAddress() + "\",\"signalStrength\":\"" + wifiAPDetails.getSignalStrength() + "\"},";
+            }
+            WifiAPDetails wifiAPDetails = wifiAPDetailsList.get(wifiAPDetailsList.size() - 1);
+            request += "{\"macAddress\":\"" + wifiAPDetails.getMacAddress() + "\",\"signalStrength\":\"" +
+                    wifiAPDetails.getSignalStrength() + "\"}],\"lat\":\"" + "0.0" + "\",\"lng\":\"" +
+                    "0.0" + "\",\"timestamp\":\"" + System.currentTimeMillis() + "\"}}";
+            Log.i(TAG, "Request: " + request);
+            requestLocalizationTask.execute(url, request);
+            wifiAPDetailsList = new ArrayList<>();
+        }
+    }
+
 
     public void addTileProvider(final String level) {
         TileProvider tileProvider;

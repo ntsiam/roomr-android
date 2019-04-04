@@ -36,9 +36,8 @@ public class RequestLocalizationTask extends AsyncTask {
     private MapsActivity mapsActivity;
 
 
-    public RequestLocalizationTask(GoogleMap map, TextView prediction, MapsActivity mapsActivity) {
+    public RequestLocalizationTask(GoogleMap map, MapsActivity mapsActivity) {
         this.mMap = map;
-        this.prediction = prediction;
         this.mapsActivity = mapsActivity;
     }
 
