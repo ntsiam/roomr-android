@@ -7,14 +7,3 @@ As a tile server, we use a manually built OSM tile server. A tutorial can be fou
 # How to create and add new maps
 To create new maps for routing, we use [JOSM](https://josm.openstreetmap.de/). For routing in a new indoor location, we need two files: An .osm file that contains the geometry of the indoor location and a .geojson file that contains the floor topology. The geometry is loaded on the tile server (example [here](https://www.youtube.com/watch?v=mqWl_7PN3lc)), while the topology is loaded in the application (example [here](https://www.youtube.com/watch?v=lnJENrE9vvg).
 
-# Information for creating a signed apk
-key pass: 38.Bs$u(J#)$Z7de
-
-Keystore path: /home/nikos/StudioProjects/TUMRFMap/keyStoreNew.jks
-Password: 38.Bs$u(J#)$Z7de
-Alias: key0
-Password: 38.Bs$u(J#)$Z7de
-First and Last Name: Georgios Pipelidis
-OU: Navindo
-O: Navindo
-Munich, Bavaria, DE
