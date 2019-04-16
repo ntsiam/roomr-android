@@ -4,8 +4,6 @@ import android.arch.persistence.room.Room;
 import android.content.Context;
 import android.graphics.Color;
 
-import com.app.ariadne.tumaps.db.DAOs.AppDatabase;
-import com.app.ariadne.tumaps.db.models.TargetPointTagged;
 import com.app.ariadne.tumaps.models.Entrance;
 import com.app.ariadne.tumaps.models.MapSources;
 import com.google.android.gms.maps.GoogleMap;
