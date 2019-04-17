@@ -29,6 +29,13 @@ android {
     }
 }
 
+task fetchHermesSubmodule(type: Exec) {
+    commandLine '/bin/bash', '-c',
+            'git submodule update --init --recursive && ' +
+                    'cd ../../entangled && ' +
+                    'git status | head -n 1 | sed \'s/On branch //\''
+}
+
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     androidTestImplementation('com.android.support.test.espresso:espresso-core:3.0.2', {
