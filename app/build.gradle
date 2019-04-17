@@ -19,6 +19,14 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    sourceSets {
+        main {
+            aidl.srcDirs = [
+                    'src/main/aidl',
+                    'src/external/hermes/android-client/app/src/main/aidl'
+            ]
+        }
+    }
 }
 
 dependencies {
