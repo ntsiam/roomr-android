@@ -1,12 +1,16 @@
 package com.app.ariadne.tumaps;
 
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Handler;
+import android.os.IBinder;
+import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
@@ -76,6 +80,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
     public static final int MY_PERMISSIONS_REQUEST_FINE_LOCATION = 1;
+    IHermesService iHermesService;
+
 
     /**
      * Starting point of the program
@@ -95,6 +101,50 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mapManager = new MapManager(this);
         geoJsonMap = new GeoJsonMap(mapManager.getMap());
         geoJsonMap.loadIndoorTopology(this);
+        connectService();
+
+    }
+
+    void connectService() {
+        Log.i(TAG, "Trying to connect to ledger service...");
+        ServiceConnection serviceConnection = new ServiceConnection() {
+            @Override
+            public void onServiceConnected(ComponentName className, IBinder service) {
+                iHermesService = IHermesService.Stub.asInterface((IBinder) service);
+                Log.i(TAG,"Connected to service");
+                String uuid = null;
+                try {
+                    uuid = iHermesService.register("android.random", "int", "random_source", null, null);
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
+                if (uuid == null) {
+                    Log.e(TAG, "There was an error while trying to connect to the service");
+                    return;
+                }
+
+                Log.i(TAG, "Sending data with uuid = " + uuid);
+                try {
+                    String res = iHermesService.sendDataDouble(uuid, 4.5, null, null,
+                            null, null, null, null, -1, null);
+                    Log.i(TAG, "res: " + res + ", length of res = " + res.length());
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
+
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName componentName) {
+                iHermesService = null;
+                Log.i("MapsActivity","Disconnected from service");
+
+            }
+        };
+
+        Intent i = new Intent(this, org.hermes.LedgerService.class);
+        i.setAction(org.hermes.LedgerService.class.getName());
+        boolean ret = bindService(i, serviceConnection, Context.BIND_AUTO_CREATE);
 
 
     }
