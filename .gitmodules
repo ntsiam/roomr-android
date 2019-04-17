@@ -1,0 +1,3 @@
+[submodule "app/src/external/hermes"]
+	path = app/src/external/hermes
+	url = git@github.com:ptzianos/hermes.git
