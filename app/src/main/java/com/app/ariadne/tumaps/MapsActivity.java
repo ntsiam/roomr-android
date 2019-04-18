@@ -137,7 +137,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         PackageInfo otherApp;
         try {
-            otherApp = getBaseContext().getPackageManager().getPackageInfo("org.hermes.client", GET_SERVICES);
+            otherApp = getBaseContext().getPackageManager().getPackageInfo("org.hermes", GET_SERVICES);
         } catch (NameNotFoundException e) {
             Log.e(TAG, "Hermes application is not installed in the system!");
             return;
