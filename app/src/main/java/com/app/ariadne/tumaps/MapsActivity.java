@@ -4,7 +4,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.content.pm.PackageManager;
+import android.content.pm.*;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -18,7 +18,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.ProgressBar;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.app.ariadne.tumaps.db.models.WifiAPDetails;
@@ -26,10 +25,8 @@ import com.app.ariadne.tumaps.geojson.GeoJSONDijkstra;
 import com.app.ariadne.tumaps.geojson.GeoJsonMap;
 import com.app.ariadne.tumaps.listeners.ButtonClickListener;
 import com.app.ariadne.tumaps.listeners.MapClickListener;
-import com.app.ariadne.tumaps.listeners.SensorChangeListener;
 import com.app.ariadne.tumaps.map.MapManager;
 import com.app.ariadne.tumaps.map.MapUIElementsManager;
-import com.app.ariadne.tumaps.map.PositionManager;
 import com.app.ariadne.tumaps.models.Route;
 import com.app.ariadne.tumaps.models.RouteInstruction;
 import com.app.ariadne.tumaps.wifi.WifiScanner;
@@ -38,21 +35,17 @@ import com.app.ariadne.tumaps.listeners.ItemClickListener;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
-import com.google.firebase.database.DatabaseException;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
 
-import org.json.JSONObject;
+import org.hermes.IHermesService;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.Queue;
+
+import static android.content.pm.PackageManager.*;
+
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
@@ -142,11 +135,32 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         };
 
-        Intent i = new Intent(this, org.hermes.LedgerService.class);
-        i.setAction(org.hermes.LedgerService.class.getName());
-        boolean ret = bindService(i, serviceConnection, Context.BIND_AUTO_CREATE);
-
-
+        PackageInfo otherApp;
+        try {
+            otherApp = getBaseContext().getPackageManager().getPackageInfo("org.hermes.client", GET_SERVICES);
+        } catch (NameNotFoundException e) {
+            Log.e(TAG, "Hermes application is not installed in the system!");
+            return;
+        }
+        ServiceInfo hermesService = null;
+        for (int i=0 ; i<otherApp.services.length ; i++) {
+            ServiceInfo serviceInfo = otherApp.services[i];
+            if (serviceInfo.name.equals("org.hermes.LedgerService")) {
+                hermesService = serviceInfo;
+                break;
+            }
+        }
+        if (hermesService == null) {
+            Log.e(TAG, "Could not find Hermes service in the package info of the Hermes App!");
+        } else {
+            Intent intent = new Intent();
+            intent.setComponent(new ComponentName(hermesService.packageName, hermesService.name));
+            if (getBaseContext().bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)) {
+                Log.i(TAG, "Initiated binding to Hermes Service!");
+            } else {
+                Log.e(TAG, "Could not bind to Hermes Service");
+            }
+        }
     }
 
     void requestPermissionToAccessLocation() {
