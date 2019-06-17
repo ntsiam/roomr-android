@@ -17,6 +17,7 @@ import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
@@ -27,6 +28,7 @@ import com.app.ariadne.tumaps.listeners.ButtonClickListener;
 import com.app.ariadne.tumaps.listeners.MapClickListener;
 import com.app.ariadne.tumaps.map.MapManager;
 import com.app.ariadne.tumaps.map.MapUIElementsManager;
+import com.app.ariadne.tumaps.models.LocalizedWifiAP;
 import com.app.ariadne.tumaps.models.Route;
 import com.app.ariadne.tumaps.models.RouteInstruction;
 import com.app.ariadne.tumaps.wifi.WifiScanner;
@@ -37,11 +39,21 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Polyline;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.FirebaseOptions;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 import org.hermes.IHermesService;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Queue;
 
 import static android.content.pm.PackageManager.*;
@@ -51,6 +63,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private static final String TAG = "MainActivity";
     public static boolean isFirstTime = true;
+    public static boolean isStreamingToTangleEnabled = false;
+    public static boolean isStreamingToTanglePossible = false;
     ArrayList<GeoJSONDijkstra> dijkstraForEachBuilding;
     Handler routeHandler = new Handler();
     MapUIElementsManager mapUIElementsManager;
@@ -61,6 +75,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     MapManager mapManager;
     MapClickListener mapClickListener;
     ItemClickListener itemClickListener;
+
+
+    public FirebaseApp dynamicMLDB;
+    public FirebaseOptions options = new FirebaseOptions.Builder()
+            .setApplicationId("dynamicml-86ae8") // Required for Analytics.
+            .setApiKey("AIzaSyCgU01k54OtOz5Y_kz0IsmrzBUEooT6HzI ") // Required for Auth.
+            .setDatabaseUrl("https://dynamicml-86ae8.firebaseio.com/") // Required for RTDB.
+            .build();
+
 
     public static ArrayList<String> instructions;
     public static ArrayList<LatLng> waypoints;
@@ -74,6 +97,26 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     public static final int MY_PERMISSIONS_REQUEST_FINE_LOCATION = 1;
     IHermesService iHermesService;
+    String uuid = null;
+    MessageDigest md;
+
+
+    private final String DATA = "{" +
+            "\"deviceMacAddress\" : \"ec:9b:f3:44:9b:6a\"," +
+            "\"lat\" : 48.263077," +
+            "\"level\" : 1," +
+            "\"lng\" : 11.667316," +
+            "\"timestamp\" : 1552372456538," +
+            "\"wifiAPDetailsArrayList\" : [ {" +
+            "\"frequency\" : 2412," +
+            "\"macAddress\" : \"18:bd:27:42:5e:e0\"," +
+            "\"signalStrength\" : 89" +
+            "}, {" +
+            "\"frequency\" : 2412," +
+            "\"macAddress\" : \"34:c3:46:60:ca:a9\"," +
+            "\"signalStrength\" : 48" +
+            "} ]" +
+            "}";
 
 
     /**
@@ -94,9 +137,51 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mapManager = new MapManager(this);
         geoJsonMap = new GeoJsonMap(mapManager.getMap());
         geoJsonMap.loadIndoorTopology(this);
+
+        dynamicMLDB = FirebaseApp.initializeApp(this /* Context */, options, "DynamicML");
+
+        try {
+            md = MessageDigest.getInstance("SHA");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+
         connectService();
+//        Timer myTimer = new Timer();
+//        TimerTask streamTimerTask = new TimerTask() {
+//            @Override
+//            public void run() {
+//                streamWifiToTangle();
+//            }
+//        };
+//        myTimer.schedule(streamTimerTask, 5000);
 
     }
+
+    private void writeSignalStrengthsToFirebaseDynamicML(LocalizedWifiAP localizedWifiAP) {
+        // Firebase Database paths must not contain '.', '#', '$', '[', or ']'
+//        mDatabase.child("wifis").child(localizedWifiAP.toString()).setValue(localizedWifiAP);
+//        System.out.println("Writing signal strengths to firebase");
+        FirebaseDatabase dynamicMLDatabase = FirebaseDatabase.getInstance(dynamicMLDB);
+        DatabaseReference ref = dynamicMLDatabase.getReference();
+        String key = ref.child("route").push().getKey();
+        Map<String, Object> childUpdates = new HashMap<>();
+        int pathCounter = 1;
+//        childUpdates.put("/route/route-" + pathCounter + "/" + key, localizedWifiAP);
+//        childUpdates.put("/route/route-1/" + key, localizedWifiAP);
+//
+//        ref.updateChildren(childUpdates);
+
+        if (localizedWifiAP.getWifiAPDetailsArrayList().size() > 0) {
+            key = ref.child("wifis").push().getKey();
+            childUpdates = new HashMap<>();
+            childUpdates.put("/wifis/route-" + pathCounter + "/" + key, localizedWifiAP);
+            childUpdates.put("/wifis/route-1/" + key, localizedWifiAP);
+
+            ref.updateChildren(childUpdates);
+        }
+    }
+
 
     void connectService() {
         Log.i(TAG, "Trying to connect to ledger service...");
@@ -105,9 +190,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             public void onServiceConnected(ComponentName className, IBinder service) {
                 iHermesService = IHermesService.Stub.asInterface((IBinder) service);
                 Log.i(TAG,"Connected to service");
-                String uuid = null;
                 try {
-                    uuid = iHermesService.register("android.random", "int", "random_source", null, null);
+                    uuid = iHermesService.register("android.maps1", "string", "random_source", null, null);
                 } catch (RemoteException e) {
                     e.printStackTrace();
                 }
@@ -117,13 +201,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 }
 
                 Log.i(TAG, "Sending data with uuid = " + uuid);
-                try {
-                    String res = iHermesService.sendDataDouble(uuid, 4.5, null, null,
-                            null, null, null, null, -1, null);
-                    Log.i(TAG, "res: " + res + ", length of res = " + res.length());
-                } catch (RemoteException e) {
-                    e.printStackTrace();
-                }
 
             }
 
@@ -136,12 +213,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         };
 
         PackageInfo otherApp;
+        Log.i(TAG, "Registering...");
         try {
             otherApp = getBaseContext().getPackageManager().getPackageInfo("org.hermes", GET_SERVICES);
         } catch (NameNotFoundException e) {
             Log.e(TAG, "Hermes application is not installed in the system!");
             return;
         }
+        Log.i(TAG, "Other app: " + otherApp.packageName);
         ServiceInfo hermesService = null;
         for (int i=0 ; i<otherApp.services.length ; i++) {
             ServiceInfo serviceInfo = otherApp.services[i];
@@ -160,6 +239,47 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             } else {
                 Log.e(TAG, "Could not bind to Hermes Service");
             }
+        }
+    }
+
+    public void endStreamingToTangle() {
+        String res = null;
+        try {
+            res = iHermesService.sendDataString(uuid, "END OF DATA", null, null,
+                    null, null, null, null, -1, null);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+        Log.i(TAG, "uuid: " + uuid + ", res: " + res + ", length of res = " + res.length());
+    }
+
+    public void streamWifiToTangle(JSONArray wifiAPDetailsListJSON) {
+        if (mapUIElementsManager.getPositionManager() != null) {
+            LatLng currentPosition = mapUIElementsManager.getPositionManager().currentPosition;
+            long unixTime = System.currentTimeMillis();
+            if (uuid != null && wifiAPDetailsListJSON != null && wifiAPDetailsListJSON.length() > 0
+                    && currentPosition != null && isStreamingToTangleEnabled) {
+                try {
+                    JSONObject localizedDataJSON = new JSONObject();
+                    localizedDataJSON.put("lat", currentPosition.latitude);
+                    localizedDataJSON.put("lng", currentPosition.longitude);
+                    localizedDataJSON.put("wifiAPList", wifiAPDetailsListJSON);
+                    localizedDataJSON.put("timestamp", unixTime);
+                    String json = localizedDataJSON.toString();
+                    Log.i(TAG, json);
+                    String res = iHermesService.sendDataString(uuid, json, null, null,
+                            null, null, null, null, -1, null);
+                    Log.i(TAG, "uuid: " + uuid + ", res: " + res + ", length of res = " + res.length());
+                } catch (RemoteException | JSONException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                Log.i(TAG, "uuid or wifi list is null");
+            }
+            LocalizedWifiAP localizedWifiAPArrayList = new LocalizedWifiAP(md, wifiAPDetailsList, currentPosition, unixTime);
+            writeSignalStrengthsToFirebaseDynamicML(localizedWifiAPArrayList);
+        } else {
+            Log.i(TAG, "Position manager is null");
         }
     }
 
@@ -207,6 +327,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void cancelTarget(View view) {
         mapUIElementsManager.removeAllDestinationElementsFromMap();
         buttonClickListener.removeButtons();
+        isStreamingToTanglePossible = false;
+        findViewById(R.id.streamToggleButton).setVisibility(Button.GONE);
     }
 
     /**
@@ -255,6 +377,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             mapUIElementsManager.setSourceAndDestination(sourceName, targetName);
             //Log.i(TAG, "Destination level = " + mapUIElementsManager.destinationLevel);
             if (mapUIElementsManager.areSourceAndDestinationNotNull()) {
+
                 Route route = dijkstraForEachBuilding.get(targetBuildingIndex).getPath(mapUIElementsManager.getSource());
 
                 instructions = dijkstraForEachBuilding.get(targetBuildingIndex).routeInstructions;
@@ -284,6 +407,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 LatLng minPoint = new LatLng(dijkstraForEachBuilding.get(targetBuildingIndex).minRouteLat, dijkstraForEachBuilding.get(targetBuildingIndex).minRouteLng);
                 LatLng maxPoint = new LatLng(dijkstraForEachBuilding.get(targetBuildingIndex).maxRouteLat, dijkstraForEachBuilding.get(targetBuildingIndex).maxRouteLng);
                 mapUIElementsManager.setRoutePathOnMap(route, routeHandler, minPoint, maxPoint);
+                routeHandler.post(new Runnable() {
+                    public void run() {
+                        isStreamingToTanglePossible = true;
+                        findViewById(R.id.streamToggleButton).setVisibility(Button.VISIBLE);
+                    }
+                });
+
 
             } else {
                 final View view = findViewById(R.id.targetDescriptionLayout);
@@ -408,7 +538,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             Toast.makeText(getApplicationContext(), "wifi is disabled..enabling it", Toast.LENGTH_LONG).show();
             wifi.setWifiEnabled(true);
         }
-        wifiScanner = new WifiScanner(wifi, getApplicationContext());
+        wifiScanner = new WifiScanner(wifi, getApplicationContext(), this);
     }
 
 }

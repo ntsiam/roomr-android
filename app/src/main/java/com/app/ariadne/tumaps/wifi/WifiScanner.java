@@ -13,6 +13,10 @@ import com.app.ariadne.tumaps.MapsActivity;
 import com.app.ariadne.tumaps.db.models.WifiAPDetails;
 import com.google.firebase.database.DatabaseReference;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
@@ -30,11 +34,13 @@ public class WifiScanner {
     Handler myHandler;
     Context context;
     public static ArrayList<WifiAPDetails> wifiAPDetailsArrayList = new ArrayList<>();
+    private MapsActivity mapsActivity;
 
-    public WifiScanner(WifiManager wifiManager, Context context) {
+    public WifiScanner(WifiManager wifiManager, Context context, MapsActivity mapsActivity) {
         wifi = wifiManager;
         initTimerToUpdateWifiList();
         this.context = context;
+        this.mapsActivity = mapsActivity;
     }
 
     private void initTimerToUpdateWifiList() {
@@ -81,6 +87,8 @@ public class WifiScanner {
             results = wifi.getScanResults();
             int size = results.size();
             MapsActivity.wifiAPDetailsList = new ArrayList<>();
+//            JSONObject wifiAPDetailsJSON = new JSONObject();
+            JSONArray wifiAPDetailsListJSON = new JSONArray();
 //            wifiAPDetailsArrayList = new ArrayList<>();
             context.unregisterReceiver(this);
             if (size <= 0) {
@@ -88,15 +96,42 @@ public class WifiScanner {
             } else {
                 try {
                     while (size > 0) {
+                        JSONObject wifiAPDetailsJSON = new JSONObject();
                         size--;
                         wifiList.add(results.get(size).level + ", " + results.get(size).BSSID + " " + results.get(size).SSID);
                         MapsActivity.wifiAPDetailsList.add(new WifiAPDetails(results.get(size).level, results.get(size).BSSID, results.get(size).frequency));
 //                        wifiAPDetailsArrayList.add(new WifiAPDetails(results.get(size).level, results.get(size).BSSID, results.get(size).frequency));
 //                        adapter.notifyDataSetChanged();
                         //System.out.println("more WiFi networks!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-                        Log.i("WIFISCANNER", "Wifi: " + results.get(size).BSSID + ", strength" + results.get(size).level);
+//                        Log.i("WIFISCANNER", "Wifi: " + results.get(size).BSSID + ", strength" + results.get(size).level);
+                        wifiAPDetailsJSON.put("signal_strength", results.get(size).level);
+
+
+                        // Create MessageDigest instance for MD5
+                        MessageDigest md = MessageDigest.getInstance("MD5");
+                        //Add password bytes to digest
+                        md.update(results.get(size).BSSID.getBytes());
+
+                        //Get the hash's bytes
+                        byte[] bytes = md.digest();
+                        //This bytes[] has bytes in decimal format;
+                        //Convert it to hexadecimal format
+                        StringBuilder sb = new StringBuilder();
+                        for(int i=0; i< bytes.length ;i++) {
+                            sb.append(Integer.toString((bytes[i] & 0xff) + 0x100, 16).substring(1));
+                        }
+                        //Get complete hashed password in hex format
+                        String hashedAddress = sb.toString();
+//                        Log.i("Scanner", "hashedAddress: " + hashedAddress);
+
+                        wifiAPDetailsJSON.put("mac_address", hashedAddress);
+                        wifiAPDetailsJSON.put("frequency", results.get(size).frequency);
+                        wifiAPDetailsListJSON.put(wifiAPDetailsJSON);
 
                     }
+//                    MapsActivity.streamWifiToTangle();
+                    Log.i("WIFISCANNER", "Streaming data...");
+                    mapsActivity.streamWifiToTangle(wifiAPDetailsListJSON);
 //                    int[] signalStrengths = extractSignalStrengthForAPs(MapsActivity.wifiAPDetailsList);
 //                predictLocation(signalStrengths);
 //                    writeToExternalStoragePublic(fileNameFromUserToStoreWifiData.getText().toString(), wifiAPDetailsList);

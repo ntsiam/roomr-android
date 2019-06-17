@@ -683,6 +683,10 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
 
     }
 
+    public PositionManager getPositionManager() {
+        return positionManager;
+    }
+
     public SensorChangeListener getSensorChangeListener() {
         return sensorChangeListener;
     }

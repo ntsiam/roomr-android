@@ -9,8 +9,6 @@ import android.widget.ImageButton;
 import android.widget.ToggleButton;
 
 import com.app.ariadne.tumaps.MapsConfiguration;
-import com.app.ariadne.tumaps.RequestLocalizationTask;
-import com.app.ariadne.tumaps.db.models.WifiAPDetails;
 import com.app.ariadne.tumaps.geojson.IndoorBuildingBoundsAndFloors;
 import com.app.ariadne.tumaps.map.MapManager;
 import com.app.ariadne.tumaps.map.MapUIElementsManager;
@@ -19,7 +17,7 @@ import com.app.ariadne.tumrfmap.R;
 import com.app.ariadne.tumaps.geojson.BoundingBox;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.LatLng;
-
+import static com.app.ariadne.tumaps.MapsActivity.isStreamingToTangleEnabled;
 import java.util.ArrayList;
 
 public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCameraIdleListener {
@@ -34,6 +32,7 @@ public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCa
     private ToggleButton leveln2;
     private ToggleButton leveln3;
     private ToggleButton leveln4;
+    private ToggleButton iota;
     private ArrayList<ToggleButton> floorButtonList;
     private Button directionsButton;
     private Button localizationButton;
@@ -116,6 +115,7 @@ public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCa
         leveln2 = mapsActivity.findViewById(R.id.buttonn2);
         leveln3 = mapsActivity.findViewById(R.id.buttonn3);
         leveln4 = mapsActivity.findViewById(R.id.buttonn4);
+        iota = mapsActivity.findViewById(R.id.streamToggleButton);
         floorButtonList = new ArrayList<>();
         floorButtonList.add(level4);
         floorButtonList.add(level3);
@@ -129,6 +129,7 @@ public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCa
         for (ToggleButton button: floorButtonList) {
             button.setOnClickListener(this);
         }
+        iota.setOnClickListener(this);
     }
 
     public void removeButtons() {
@@ -211,6 +212,13 @@ public class ButtonClickListener implements View.OnClickListener, GoogleMap.OnCa
         } else if (view.getId() == R.id.revert) {
             ((MapsActivity)(context)).onFindOriginDestinationClick();
             mapUIElementsManager.removeAllDestinationElementsFromMap();
+        } else if (view.getId() == R.id.streamToggleButton) {
+            if (iota.isChecked()) {
+                isStreamingToTangleEnabled = true;
+            } else {
+                isStreamingToTangleEnabled = false;
+                ((MapsActivity)(context)).endStreamingToTangle();
+            }
         } else if (view.getId() == R.id.targetDescriptionLayout) {
 //            LinearLayout descriptionLayout = findViewById(R.id.targetDescriptionLayout);
 //            descriptionLayout.setOnClickListener(null);

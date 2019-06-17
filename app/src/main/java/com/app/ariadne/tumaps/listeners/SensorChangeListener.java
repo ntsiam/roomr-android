@@ -112,6 +112,7 @@ public class SensorChangeListener implements SensorEventListener {
             positionManager.updatePosition(newSteps);
         }
         stepsTillNow = steps;
+//        mapsActivity.streamWifiToTangle();
     }
 
 

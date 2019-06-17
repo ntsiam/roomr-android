@@ -17,7 +17,7 @@ public class PositionManager implements TextToSpeech.OnInitListener {
     private Context applicationContext;
     private MapsActivity mapsActivity;
     private Queue<RouteInstruction> routeInstructionQueue;
-    private LatLng currentPosition;
+    public LatLng currentPosition;
     private RouteInstruction previousInstruction;
     private RouteInstruction nextInstruction;
     private double currentHeading;

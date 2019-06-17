@@ -8,7 +8,7 @@
     android:background="@android:color/transparent"
     android:onClick="cancelTarget"
     android:orientation="vertical"
-    tools:context="com.app.ariadne.tumrfmap.com.app.ariadne.tumaps.MapsActivity">
+    tools:context="com.app.ariadne.tumaps.MapsActivity">
 
     <ViewStub
         android:id="@+id/stub_import"
@@ -321,6 +321,21 @@
         android:layout_alignParentTop="true"
         android:layout_marginTop="122dp"
         android:text="Loc" />
+
+    <ToggleButton
+        android:id="@+id/streamToggleButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/localization"
+        android:layout_alignEnd="@+id/localization"
+        android:layout_marginTop="18dp"
+        android:layout_marginEnd="0dp"
+        android:textAllCaps="false"
+        android:text="IOTA"
+        android:textOff="IOTA"
+        android:textOn="IOTA"
+        android:visibility="gone"
+        />
 
     <!--<ImageButton-->
         <!--android:id="@+id/imageButton2"-->
