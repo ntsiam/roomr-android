@@ -1,13 +1,19 @@
 package com.app.ariadne.tumaps;
 
+import android.bluetooth.BluetoothAdapter;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.*;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.RemoteException;
@@ -49,17 +55,23 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import static android.content.pm.PackageManager.*;
 
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, SensorEventListener {
 
     private static final String TAG = "MainActivity";
     public static boolean isFirstTime = true;
@@ -99,6 +111,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     IHermesService iHermesService;
     String uuid = null;
     MessageDigest md;
+    ArrayList<String> sensorMeasurements;
+
+    private SensorManager mSensorManager;
+    private Sensor mAccelerometer;
+    private Sensor mGyroscope;
+    private Sensor mStepSensor;
+    private Sensor mCompass;
+    private Sensor mMagnetometer;
+    float[] mGravity;
+    float[] mGeomagnetic;
 
 
     private final String DATA = "{" +
@@ -147,6 +169,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
 
         connectService();
+        initSensors();
+        sensorMeasurements = new ArrayList<>();
+
 //        Timer myTimer = new Timer();
 //        TimerTask streamTimerTask = new TimerTask() {
 //            @Override
@@ -251,6 +276,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             e.printStackTrace();
         }
         Log.i(TAG, "uuid: " + uuid + ", res: " + res + ", length of res = " + res.length());
+        writeFinalMeasurementsToFile();
     }
 
     public void streamWifiToTangle(JSONArray wifiAPDetailsListJSON) {
@@ -301,6 +327,35 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onRequestPermissionsResult(int permsRequestCode, String[] permissions, int[] grantResults) {
         mapManager.setMyLocationEnabled(true);
 
+    }
+
+    public void writeFinalMeasurementsToFile() {
+        String packageName = this.getPackageName();
+        String path = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Android/data/" + packageName + "/files/";
+        File file = new File(path, "output");
+
+        BufferedOutputStream bos = null;
+
+        try {
+            FileOutputStream fos = new FileOutputStream(file, true);
+            bos = new BufferedOutputStream(fos);
+//            bos.write(data);
+            String[] sensorArray = sensorMeasurements.toArray(new String[sensorMeasurements.size()]);
+
+            for (int i = 0; i < sensorMeasurements.size(); i++) {
+                bos.write((sensorArray[i]).getBytes());
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (bos != null) {
+                try {
+                    bos.flush();
+                    bos.close();
+                } catch (Exception e) {
+                }
+            }
+        }
     }
 
     @Override
@@ -443,6 +498,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         });
     }
 
+    private void writePositionToFile(String message) {
+        if (mapUIElementsManager != null && mapUIElementsManager.getPositionManager() != null) {
+
+            LatLng currentPosition = mapUIElementsManager.getPositionManager().currentPosition;
+
+            if (currentPosition != null) {
+                long unixTime = System.currentTimeMillis();
+                String completeMessage = unixTime + "," + message + currentPosition.latitude + "," + currentPosition.longitude + "\r\n";
+                sensorMeasurements.add(completeMessage);
+            }
+        }
+    }
+
+
     private void handleNewDestinationFromFindDestinationActivity(Intent data) {
         String destination = data.getStringExtra("Destination");
         if (destination != null && !destination.equals("")) {
@@ -519,6 +588,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (mapUIElementsManager != null) {
             mapUIElementsManager.getSensorChangeListener().registerListeners();
         }
+        initSensors();
+        mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_FASTEST);
+        mSensorManager.registerListener(this, mGyroscope, SensorManager.SENSOR_DELAY_FASTEST);
+        mSensorManager.registerListener(this, mStepSensor, SensorManager.SENSOR_DELAY_FASTEST);
+        mSensorManager.registerListener(this, mMagnetometer, SensorManager.SENSOR_DELAY_FASTEST);
+        isFirstTime = true;
+
     }
 
     protected void onPause() {
@@ -526,6 +602,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (mapUIElementsManager != null) {
             mapUIElementsManager.getSensorChangeListener().unregisterListeners();
         }
+//        mGeomagnetic = null;
+//        mGravity = null;
+//        mSensorManager.unregisterListener(this);
     }
 
     void initWifiScanner() {
@@ -541,4 +620,53 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         wifiScanner = new WifiScanner(wifi, getApplicationContext(), this);
     }
 
+    void initSensors() {
+        mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
+        mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        mGyroscope = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+        mStepSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER);
+        mMagnetometer = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+    }
+
+    public void handleSensor(String type, float[] values) {
+        String message = type + ",";
+        StringBuilder buffer = new StringBuilder();
+        buffer.append(message);
+        for (int i = 0; i < values.length; i++) {
+            message += values[i] + ",";
+//            buffer.append(values[i] + ",");
+        }
+        writePositionToFile(message);
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent sensorEvent) {
+        switch (sensorEvent.sensor.getType()) {
+            case Sensor.TYPE_GYROSCOPE:
+                handleSensor("Gyroscope", sensorEvent.values);
+                break;
+            case Sensor.TYPE_STEP_COUNTER:
+                handleSensor("Step_counter", sensorEvent.values);
+                break;
+            case Sensor.TYPE_ACCELEROMETER:
+                handleSensor("Accelerometer", sensorEvent.values);
+                mGravity = sensorEvent.values;
+                break;
+            case Sensor.TYPE_MAGNETIC_FIELD:
+//                handleSensor("Magnetic_field", sensorEvent.values);
+                mGeomagnetic = sensorEvent.values;
+                break;
+            case Sensor.TYPE_PRESSURE:
+//                handleSensor("Pressure", sensorEvent.values);
+                break;
+            default:
+                String sensorName = sensorEvent.sensor.getName();
+//                System.out.println(sensorName + ": X: " + sensorEvent.values[0]);
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int i) {
+
+    }
 }
