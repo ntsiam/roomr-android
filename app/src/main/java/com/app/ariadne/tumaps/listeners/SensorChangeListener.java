@@ -79,7 +79,7 @@ public class SensorChangeListener implements SensorEventListener {
     public void onSensorChanged(SensorEvent sensorEvent) {
 //        Log.i(TAG, "Sensor update: " + sensorEvent.sensor.getName());
         if (isFirstTime && positionManager != null && firstInstructionHasNotBeenPlayed) {
-            positionManager.playFirstInstruction();
+//            positionManager.playFirstInstruction();
             firstInstructionHasNotBeenPlayed = false;
             Log.i(TAG, "I should have said the first instruction");
         } else if (positionManager == null){
@@ -114,6 +114,7 @@ public class SensorChangeListener implements SensorEventListener {
         stepsTillNow = steps;
 //        mapsActivity.streamWifiToTangle();
     }
+
 
 
     @Override

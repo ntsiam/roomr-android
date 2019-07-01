@@ -33,6 +33,7 @@ import com.app.ariadne.tumaps.models.Route;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.Projection;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.CircleOptions;
@@ -73,7 +74,7 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
     public int destinationLevel;
     public ArrayList<Polyline> routeLines;
     ButtonClickListener buttonClickListener;
-    ArrayList<Marker> routeMarkers;
+    public ArrayList<Marker> routeMarkers;
     GeoJsonMap geoJsonMap;
     boolean areMapElementsVisible;
     LinearLayout descriptionLayout;
@@ -81,6 +82,7 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
     ImageButton cancelButton;
     TextToSpeech tts;
     public Queue<RouteInstruction> routeInstructionsFinal;
+    public static ArrayList<LatLngWithTags> stars;
     public ArrayList<RouteInstruction> routeInstructionsArrayList;
     ListView instructionList;
     ArrayList<String> instructions = new ArrayList<>();
@@ -90,6 +92,7 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
     ArrayList<String> finalInstructions;
     private SensorChangeListener sensorChangeListener;
     PositionManager positionManager;
+    public ArrayList<Marker> starMarkers;
 
 
 
@@ -182,6 +185,43 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
         instructionMarker = null;
     }
 
+//    public void addStars(int startIndex, int endIndex) {
+//        if (starMarkers != null) {
+//            for (Marker marker : starMarkers) {
+//                if (marker != null) {
+//                    marker.remove();
+//                }
+//            }
+//            starMarkers = null;
+//        }
+//        starMarkers = new ArrayList<>();
+//        for (int i = 0; i < startIndex; i++) {
+//            starMarkers.add(null);
+//        }
+//        for (int i = startIndex; i <= endIndex; i++) {
+//            Marker star = mMap.addMarker(new MarkerOptions()
+//                    .position(stars.get(i).getLatlng())
+//                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.star)));
+//            starMarkers.add(star);
+//        }
+//        ArrayList<Marker> starMarkersTemp = starMarkers;
+//        starMarkers = new ArrayList<>();
+//        for (int i = 0; i < startIndex; i++) {
+//            starMarkers.add(null);
+//        }
+////        for (int i = 0; i < stars.size(); i++) {
+////            for (int j = 0; j < stars.size(); j++) {
+//        for (int i = startIndex; i <= endIndex; i++) {
+//            for (int j = startIndex; j <= endIndex; j++) {
+//                if (Integer.valueOf(stars.get(j).getId()) == i) {
+//                    starMarkers.add(starMarkersTemp.get(j));
+//                    Log.i(TAG, "Add starmarker index: " + i);
+//                }
+//            }
+//        }
+//    }
+
+
     public void addNewInstructionMarker(int index) {
         RouteInstruction routeInstruction = routeInstructionsArrayList.get(index);
         MarkerOptions options = new MarkerOptions()
@@ -195,8 +235,8 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
         MarkerOptions options = new MarkerOptions()
                 .position(routeInstruction.getPoint())
                 .title(routeInstruction.getInstruction());
-        instructionMarker = mMap.addMarker(options);
-        instructionMarker.showInfoWindow();
+//        instructionMarker = mMap.addMarker(options);
+//        instructionMarker.showInfoWindow();
     }
 
 
@@ -476,7 +516,7 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
         if (routeLines == null) {
             routeLines = new ArrayList<>();
         }
-        routeLines.add(mMap.addPolyline(polylineOptions));
+//        routeLines.add(mMap.addPolyline(polylineOptions));
 
     }
 
@@ -567,7 +607,7 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
                         moveCameraToStartingPosition(minPoint, maxPoint);
                         removeRouteLine();
                         routeLines = new ArrayList<>();
-                        routeLines.add(mMap.addPolyline(routePolylineOptions));
+//                        routeLines.add(mMap.addPolyline(routePolylineOptions));
                     }
                     removeDestinationMarker();
                     addDestinationMarker(destination);
@@ -594,7 +634,11 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
                     int index = 0;
                     Log.i(TAG, "Number of waypoints: " + waypoints.size());
                     RouteInstruction routeInstruction = null;
+
+                    addWayPoints();
 //                    for (LatLng point: waypoints) {
+
+
                     while (!instructionQueue.isEmpty()) {
                         routeInstruction = instructionQueue.poll();
                         Log.i(TAG, "Instruction: " + routeInstruction.getInstruction());
@@ -653,6 +697,7 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
                     adapterForInstructions =  new ArrayAdapter<>(context, android.R.layout.simple_dropdown_item_1line, finalInstructions);
                     instructionList.setAdapter(adapterForInstructions);
                     if (instructionList.getAdapter().getCount() > 0) {
+//                        instructionList.setVisibility(ListView.VISIBLE);
                         instructionList.setVisibility(ListView.VISIBLE);
                         AdapterView.OnItemClickListener onItemClickListener = new AdapterView.OnItemClickListener() {
                             @Override
@@ -683,6 +728,17 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
 
     }
 
+    public void addWayPoints() {
+        for (int i = 1; i < waypoints.size(); i++) {
+            Marker stair;
+            MarkerOptions markerOptions1 = new MarkerOptions()
+                            .position(waypoints.get(i))
+                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.star));
+            stair = mMap.addMarker(markerOptions1);
+            routeMarkers.add(stair);
+        }
+    }
+
     public PositionManager getPositionManager() {
         return positionManager;
     }
@@ -711,9 +767,9 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
                 stair = mMap.addMarker(markerOptions1);
                 routeMarkers.add(stair);
             }
-            if (routeMarkers.size() > 0) {
-                routeMarkers.get(0).showInfoWindow();
-            }
+//            if (routeMarkers.size() > 0) {
+//                routeMarkers.get(0).showInfoWindow();
+//            }
         }
 //        for (int i = 1; i < routePolylineOptionsInLevels.size(); i++) {
 //            Marker stair;
@@ -735,6 +791,7 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
             removeRouteMarkers();
         }
         routeMarkers = new ArrayList<>();
+        stars = new ArrayList<>();
     }
 
     private void removeRouteMarkers() {

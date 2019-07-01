@@ -219,13 +219,22 @@ public class GeoJSONDijkstra {
                     pathArrayList.add(nextPoint);
                     polylineOptions.add(nextPoint);
                     double tempDistance = SphericalUtil.computeDistanceBetween(prevPoint, nextPoint);
+                    double tempTempDistance = tempDistance;
                     currentHeading = SphericalUtil.computeHeading(prevPoint, nextPoint);
+                    LatLng tempPoint = prevPoint;
+                    while (tempTempDistance > 10.0) {
+                        LatLng intermediatePoint = SphericalUtil.computeOffset(prevPoint, 5, currentHeading);
+                        routeInstructionPoints.add(intermediatePoint);
+                        prevPoint = intermediatePoint;
+                        tempTempDistance = SphericalUtil.computeDistanceBetween(prevPoint, nextPoint);
+                    }
+                    prevPoint = tempPoint;
                     if (currentHeading < 0) {
                         currentHeading = 360 + currentHeading;
                     }
-                    if (Math.abs(currentHeading - prevHeading) > 20.0) { // If it is not the first point in the path and there is a turn
+                    if (Math.abs(currentHeading - prevHeading) > 0.0) { // If it is not the first point in the path and there is a turn
                         Log.i("Instuctions", "Current distance = " + currentDistance);
-                        if (currentDistance > 0.2) { // If there has been some distance travelled
+                        if (currentDistance > 0.6) { // If there has been some distance travelled
                             instruction = "Walk straight on level " + prevLevel + " for " + ((int) (currentDistance * 10)) / 10.0 + " meters.";
                             routeInstructions.add(instruction);
                             routeInstructionPoints.add(prevInstructionPoint); // Way point is the one that started the straight path that ended at nextPoint

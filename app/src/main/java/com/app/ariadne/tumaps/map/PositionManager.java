@@ -1,12 +1,15 @@
 package com.app.ariadne.tumaps.map;
 
 import android.content.Context;
+import android.os.Vibrator;
+import android.speech.SpeechRecognizer;
 import android.speech.tts.TextToSpeech;
 import android.util.Log;
 
 import com.app.ariadne.tumaps.MapsActivity;
 import com.app.ariadne.tumaps.models.RouteInstruction;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.maps.android.SphericalUtil;
 
 import java.util.Locale;
@@ -65,10 +68,13 @@ public class PositionManager implements TextToSpeech.OnInitListener {
         previousInstruction = routeInstructionQueue.poll();
         nextInstruction = routeInstructionQueue.poll();
         this.currentHeading = SphericalUtil.computeHeading(previousInstruction.getPoint(), nextInstruction.getPoint());
+//        LatLng firstPoint = mapUIElementsManager.routeMarkers.get(0).getPosition();
+//        LatLng secondPoint = mapUIElementsManager.routeMarkers.get(1).getPosition();
+//        this.currentHeading = SphericalUtil.computeHeading(firstPoint, secondPoint);
         instructionIndex = 0;
         mapUIElementsManager.addSourceCircle(currentPosition);
-        Log.i(TAG, "First instruction: " + previousInstruction.getInstruction());
-//        tts.speak(previousInstruction.getInstruction().toString(), TextToSpeech.QUEUE_FLUSH, null);
+//        Log.i(TAG, "First instruction: " + previousInstruction.getInstruction());
+//        tts.speak(previousInstruction.getInstr++uction().toString(), TextToSpeech.QUEUE_FLUSH, null);
 //        tts.speak("This is the first instruction", TextToSpeech.QUEUE_ADD, null);
 
 
@@ -76,7 +82,7 @@ public class PositionManager implements TextToSpeech.OnInitListener {
     }
 
     public void playFirstInstruction() {
-        tts.speak(previousInstruction.getInstruction(), TextToSpeech.QUEUE_ADD,null);
+//        tts.speak(previousInstruction.getInstruction(), TextToSpeech.QUEUE_ADD,null);
     }
 
     public void cancelNavigation() {
@@ -89,7 +95,8 @@ public class PositionManager implements TextToSpeech.OnInitListener {
         LatLng previousPosition = currentPosition;
         double distance = numOfSteps * STEP_LENGTH;
         Log.i(TAG, "Number of steps: " + numOfSteps);
-        if (!routeInstructionQueue.isEmpty() || SphericalUtil.computeDistanceBetween(currentPosition, nextInstruction.getPoint()) > distance) {
+
+        if (routeInstructionQueue!= null && !routeInstructionQueue.isEmpty() || SphericalUtil.computeDistanceBetween(currentPosition, nextInstruction.getPoint()) > distance) {
             LatLng tempPosition = SphericalUtil.computeOffset(currentPosition, distance, currentHeading);
             while (SphericalUtil.computeDistanceBetween(currentPosition, tempPosition) > SphericalUtil.computeDistanceBetween(currentPosition, nextInstruction.getPoint()) && !routeInstructionQueue.isEmpty()) {
                 distance = distance - SphericalUtil.computeDistanceBetween(currentPosition, nextInstruction.getPoint());
@@ -106,7 +113,7 @@ public class PositionManager implements TextToSpeech.OnInitListener {
 //                instructionIndex++;
                 mapUIElementsManager.removeInstructionMarker();
                 mapUIElementsManager.addNewInstructionMarkerGivenInstruction(nextInstruction);
-                tts.speak(nextInstruction.getInstruction(), TextToSpeech.QUEUE_ADD, null);
+//                tts.speak(nextInstruction.getInstruction(), TextToSpeech.QUEUE_ADD, null);
                 isCloserToNextInstruction = true;
 
             } else if (SphericalUtil.computeDistanceBetween(previousInstruction.getPoint(), nextInstruction.getPoint()) < (3 * STEP_LENGTH) || (3 * STEP_LENGTH) < SphericalUtil.computeDistanceBetween(currentPosition, nextInstruction.getPoint())) {
@@ -115,7 +122,20 @@ public class PositionManager implements TextToSpeech.OnInitListener {
         } else {
             currentPosition = nextInstruction.getPoint();
         }
+        checkIfStarsCollected(currentPosition);
         mapUIElementsManager.moveCameraToPosition(currentPosition, currentPosition, 20);
+    }
+
+    void checkIfStarsCollected(LatLng currentPosition) {
+
+        for (Marker star: mapUIElementsManager.routeMarkers) {
+            if (SphericalUtil.computeDistanceBetween(star.getPosition(), currentPosition) < 1.0) {
+                star.setVisible(false);
+                Vibrator vibe = (Vibrator) mapsActivity.getSystemService(Context.VIBRATOR_SERVICE);
+                vibe.vibrate(100);
+
+            }
+        }
     }
 
     @Override
