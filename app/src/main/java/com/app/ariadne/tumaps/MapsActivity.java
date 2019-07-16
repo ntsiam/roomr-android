@@ -200,7 +200,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (localizedWifiAP.getWifiAPDetailsArrayList().size() > 0) {
             key = ref.child("wifis").push().getKey();
             childUpdates = new HashMap<>();
-            childUpdates.put("/wifis/route-" + pathCounter + "/" + key, localizedWifiAP);
+//            childUpdates.put("/wifis/route-" + pathCounter + "/" + key, localizedWifiAP);
             childUpdates.put("/wifis/route-1/" + key, localizedWifiAP);
 
             ref.updateChildren(childUpdates);
@@ -289,7 +289,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     JSONObject localizedDataJSON = new JSONObject();
                     localizedDataJSON.put("lat", currentPosition.latitude);
                     localizedDataJSON.put("lng", currentPosition.longitude);
-                    localizedDataJSON.put("wifiAPList", wifiAPDetailsListJSON);
+//                    localizedDataJSON.put("wifiAPList", wifiAPDetailsListJSON);
                     localizedDataJSON.put("timestamp", unixTime);
                     String json = localizedDataJSON.toString();
                     Log.i(TAG, json);
@@ -653,7 +653,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 mGravity = sensorEvent.values;
                 break;
             case Sensor.TYPE_MAGNETIC_FIELD:
-//                handleSensor("Magnetic_field", sensorEvent.values);
+                handleSensor("Magnetic_field", sensorEvent.values);
                 mGeomagnetic = sensorEvent.values;
                 break;
             case Sensor.TYPE_PRESSURE:

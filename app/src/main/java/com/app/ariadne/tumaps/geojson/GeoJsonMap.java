@@ -58,11 +58,13 @@ public class GeoJsonMap {
         buildingIdToName.put("mi", "Mathematics Informatics");
         buildingIdToName.put("mw", "Mechanical Engineering");
         buildingIdToName.put("mc", "Main Campus");
+        buildingIdToName.put("MUEL", "Muehldorf");
         buildingIdToName.put("hypermotion", "Hypermotion");
         buildingNameToId.put("Mathematics Informatics", "mi");
         buildingNameToId.put("Mechanical Engineering", "mw");
         buildingNameToId.put("Main Campus", "mc");
         buildingNameToId.put("Hypermotion", "hypermotion");
+        buildingNameToId.put("Muehldorf", "MUEL");
         mapSources = new MapSources();
     }
 

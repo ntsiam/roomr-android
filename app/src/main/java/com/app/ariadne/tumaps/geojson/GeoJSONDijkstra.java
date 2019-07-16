@@ -192,6 +192,7 @@ public class GeoJSONDijkstra {
             minRouteLevel = maxRoutelevel = sourceLevel = Integer.valueOf(path.get(0).getLevel());
             for (Vertex point : path) {
                 int level = Integer.valueOf(point.getLevel());
+//                if (level == 1) { level = -1; }
                 if (level < minRouteLevel) {
                     minRouteLevel = level;
                 }
@@ -232,7 +233,7 @@ public class GeoJSONDijkstra {
                     if (currentHeading < 0) {
                         currentHeading = 360 + currentHeading;
                     }
-                    if (Math.abs(currentHeading - prevHeading) > 0.0) { // If it is not the first point in the path and there is a turn
+                    if (Math.abs(currentHeading - prevHeading) > 10.0) { // If it is not the first point in the path and there is a turn
                         Log.i("Instuctions", "Current distance = " + currentDistance);
                         if (currentDistance > 0.6) { // If there has been some distance travelled
                             instruction = "Walk straight on level " + prevLevel + " for " + ((int) (currentDistance * 10)) / 10.0 + " meters.";

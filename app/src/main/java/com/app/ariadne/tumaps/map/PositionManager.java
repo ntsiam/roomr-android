@@ -8,6 +8,9 @@ import android.util.Log;
 
 import com.app.ariadne.tumaps.MapsActivity;
 import com.app.ariadne.tumaps.models.RouteInstruction;
+import com.google.android.gms.maps.CameraUpdate;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.maps.android.SphericalUtil;
@@ -23,7 +26,7 @@ public class PositionManager implements TextToSpeech.OnInitListener {
     public LatLng currentPosition;
     private RouteInstruction previousInstruction;
     private RouteInstruction nextInstruction;
-    private double currentHeading;
+    public double currentHeading;
     private final double STEP_LENGTH = 0.66;
     private MapUIElementsManager mapUIElementsManager;
     private final static String TAG = "PositionManager";
@@ -110,10 +113,10 @@ public class PositionManager implements TextToSpeech.OnInitListener {
             mapUIElementsManager.removeSourceCircle();
             mapUIElementsManager.addSourceCircle(currentPosition);
             if (!isCloserToNextInstruction && (3 * STEP_LENGTH) > SphericalUtil.computeDistanceBetween(currentPosition, nextInstruction.getPoint()) || SphericalUtil.computeDistanceBetween(currentPosition, nextInstruction.getPoint()) > SphericalUtil.computeDistanceBetween(previousPosition, nextInstruction.getPoint())) {
-//                instructionIndex++;
+                instructionIndex++;
                 mapUIElementsManager.removeInstructionMarker();
                 mapUIElementsManager.addNewInstructionMarkerGivenInstruction(nextInstruction);
-//                tts.speak(nextInstruction.getInstruction(), TextToSpeech.QUEUE_ADD, null);
+                tts.speak(nextInstruction.getInstruction(), TextToSpeech.QUEUE_ADD, null);
                 isCloserToNextInstruction = true;
 
             } else if (SphericalUtil.computeDistanceBetween(previousInstruction.getPoint(), nextInstruction.getPoint()) < (3 * STEP_LENGTH) || (3 * STEP_LENGTH) < SphericalUtil.computeDistanceBetween(currentPosition, nextInstruction.getPoint())) {
@@ -122,8 +125,12 @@ public class PositionManager implements TextToSpeech.OnInitListener {
         } else {
             currentPosition = nextInstruction.getPoint();
         }
-        checkIfStarsCollected(currentPosition);
-        mapUIElementsManager.moveCameraToPosition(currentPosition, currentPosition, 20);
+//        checkIfStarsCollected(currentPosition);
+//        mapUIElementsManager.moveCameraToPosition(currentPosition, currentPosition, 20);
+        CameraPosition cameraPosition = new CameraPosition(currentPosition, 23, 0, (float)currentHeading);
+        CameraUpdate newCameraUpdate = CameraUpdateFactory.newCameraPosition(cameraPosition);
+        mapUIElementsManager.mMap.animateCamera(newCameraUpdate);
+
     }
 
     void checkIfStarsCollected(LatLng currentPosition) {

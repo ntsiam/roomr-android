@@ -16,16 +16,18 @@ public class MapsConfiguration {
     private static final BoundingBox HAUPTBAHNHOF_BB = new BoundingBox(new LatLng(48.143000, 11.565000), new LatLng(48.137300, 11.554600));
     private static final BoundingBox GARCHING_MI_BB = new BoundingBox(new LatLng(48.2636, 11.6705), new LatLng(48.2613, 11.6653));
     private static final BoundingBox HYPERMOTION_BB = new BoundingBox(new LatLng(50.113844, 8.650535), new LatLng(50.111545, 8.643418));
+    private static final BoundingBox MUEHLDORF_BB = new BoundingBox(new LatLng(48.260798, 12.535818), new LatLng(48.242179, 12.494859));
     private static final IndoorBuildingBoundsAndFloors MAIN_CAMPUS = new IndoorBuildingBoundsAndFloors(MAIN_CAMPUS_BB, 0, 5);
     private static final IndoorBuildingBoundsAndFloors MASCHINENWESEN = new IndoorBuildingBoundsAndFloors(MASCHINENWESEN_BB, 0, 3);
     private static final IndoorBuildingBoundsAndFloors MUENCHNER_FREIHEIT = new IndoorBuildingBoundsAndFloors(MUENCHNER_FREIHEIT_BB, -2, 0);
     private static final IndoorBuildingBoundsAndFloors HAUPTBAHNHOF = new IndoorBuildingBoundsAndFloors(HAUPTBAHNHOF_BB, -4, 0);
     private static final IndoorBuildingBoundsAndFloors GARCHING_MI = new IndoorBuildingBoundsAndFloors(GARCHING_MI_BB, 0, 3);
     private static final IndoorBuildingBoundsAndFloors HYPERMOTION = new IndoorBuildingBoundsAndFloors(HYPERMOTION_BB, 0, 0);
+    private static final IndoorBuildingBoundsAndFloors MUEHLDORD = new IndoorBuildingBoundsAndFloors(MUEHLDORF_BB, -1, 1);
 
 
     private static final IndoorBuildingBoundsAndFloors[] BOUNDS_FOR_INDOOR_BUTTONS = new IndoorBuildingBoundsAndFloors[] {
-            MUENCHNER_FREIHEIT, HAUPTBAHNHOF, GARCHING_MI, MAIN_CAMPUS, MASCHINENWESEN, HYPERMOTION
+            MUENCHNER_FREIHEIT, HAUPTBAHNHOF, GARCHING_MI, MAIN_CAMPUS, MASCHINENWESEN, HYPERMOTION, MUEHLDORD
     };
 
     private MIDestinationIdAnalyzer miDestinationIdAnalyzer;
@@ -34,7 +36,8 @@ public class MapsConfiguration {
 //    private final LatLng MAP_CENTER = new LatLng(50.11241390288, 8.64781737294);
     private final LatLngBounds MAP_BOUNDS = new LatLngBounds(
 //            new LatLng(48.5361, 8.443418), new LatLng(52.113844, 12.062));
-                new LatLng(47.8173, 11.063), new LatLng(48.5361, 12.062));
+//        new LatLng(47.8173, 11.063), new LatLng(48.5361, 12.062));
+        new LatLng(47.8173, 11.063), new LatLng(48.5561, 13.108972));
     private final int INITIAL_ZOOM = 14;
     private final int MIN_ZOOM_FOR_INDOOR_MAPS = 15;
 
@@ -77,7 +80,10 @@ public class MapsConfiguration {
             level = miDestinationIdAnalyzer.getLevelFromId(id);
         } else if (mwDestinationIdAnalyzer.isValidDestinationId(id)) {
             level = mwDestinationIdAnalyzer.getLevelFromId(id);
+        } else if (id.split("-").length > 1) {
+            level = 1;
         } else {
+            level = 0;
             // Fill in code for additional buildings
         }
         return level;

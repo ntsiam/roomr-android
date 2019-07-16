@@ -30,6 +30,7 @@ import com.app.ariadne.tumaps.geojson.GeoJsonMap;
 import com.app.ariadne.tumaps.geojson.LatLngWithTags;
 import com.app.ariadne.tumaps.listeners.ButtonClickListener;
 import com.app.ariadne.tumaps.models.Route;
+import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.Projection;
@@ -65,7 +66,8 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
     public static final int MAX_FLOOR = 4;
     public String sourceName;
     public String destinationName;
-    public Circle sourceMarker;
+//    public Circle sourceMarker;
+    public Marker sourceMarker;
     public GoogleMap mMap;
     public Marker destinationMarker;
     public LatLngWithTags destination;
@@ -235,8 +237,8 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
         MarkerOptions options = new MarkerOptions()
                 .position(routeInstruction.getPoint())
                 .title(routeInstruction.getInstruction());
-//        instructionMarker = mMap.addMarker(options);
-//        instructionMarker.showInfoWindow();
+        instructionMarker = mMap.addMarker(options);
+        instructionMarker.showInfoWindow();
     }
 
 
@@ -473,9 +475,20 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
                 .strokeWidth(2) // The width is in pixel, so try it!
                 .clickable(true)
                 .zIndex(Integer.MAX_VALUE);
-        sourceMarker = mMap.addCircle(circleOptions);
-        sourceMarker.setClickable(true);
-        sourceMarker.setTag(sourceName);
+//        sourceMarker = mMap.addCircle(circleOptions);
+        sourceMarker = mMap.addMarker(new MarkerOptions()
+                .position(sourceLatLng)
+                .icon(BitmapDescriptorFactory.fromResource(R.drawable.arrow))
+                .flat(true)
+                .rotation((float)positionManager.currentHeading));
+        CameraPosition cameraPosition = new CameraPosition(sourceLatLng, 23, 0, (float)positionManager.currentHeading);
+        CameraUpdate newCameraUpdate = CameraUpdateFactory.newCameraPosition(cameraPosition);
+        mMap.animateCamera(newCameraUpdate);
+
+
+
+//        sourceMarker.setClickable(true);
+//        sourceMarker.setTag(sourceName);
     }
 
     public int findPolyLineIndex(int level) {
@@ -516,7 +529,7 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
         if (routeLines == null) {
             routeLines = new ArrayList<>();
         }
-//        routeLines.add(mMap.addPolyline(polylineOptions));
+        routeLines.add(mMap.addPolyline(polylineOptions));
 
     }
 
@@ -635,7 +648,7 @@ public class MapUIElementsManager implements TextToSpeech.OnInitListener {
                     Log.i(TAG, "Number of waypoints: " + waypoints.size());
                     RouteInstruction routeInstruction = null;
 
-                    addWayPoints();
+//                    addWayPoints();
 //                    for (LatLng point: waypoints) {
 
 
