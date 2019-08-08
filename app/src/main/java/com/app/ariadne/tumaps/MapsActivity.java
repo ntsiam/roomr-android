@@ -18,8 +18,6 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.preference.PreferenceManager;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -27,6 +25,8 @@ import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import androidx.core.app.ActivityCompat;
+import androidx.fragment.app.FragmentActivity;
 import com.app.ariadne.tumaps.db.models.WifiAPDetails;
 import com.app.ariadne.tumaps.geojson.GeoJSONDijkstra;
 import com.app.ariadne.tumaps.geojson.GeoJsonMap;

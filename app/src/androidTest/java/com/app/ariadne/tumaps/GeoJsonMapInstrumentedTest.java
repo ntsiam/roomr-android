@@ -1,9 +1,9 @@
 package com.app.ariadne.tumaps;
 
 import android.content.Context;
-import android.support.test.InstrumentationRegistry;
-import android.support.test.runner.AndroidJUnit4;
 
+import androidx.test.InstrumentationRegistry;
+import androidx.test.runner.AndroidJUnit4;
 import com.app.ariadne.tumaps.geojson.GeoJsonMap;
 import com.app.ariadne.tumaps.geojson.LatLngWithTags;
 import com.app.ariadne.tumaps.models.Entrance;
