@@ -1,16 +1,12 @@
 package com.app.ariadne.tumaps.geojson;
 
-import android.arch.persistence.room.Room;
 import android.content.Context;
-import android.graphics.Color;
 
 import com.app.ariadne.tumaps.models.Entrance;
 import com.app.ariadne.tumaps.models.MapSources;
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.common.collect.Lists;
-import com.google.maps.android.data.Layer;
 import com.google.maps.android.data.geojson.GeoJsonFeature;
 import com.google.maps.android.data.geojson.GeoJsonLayer;
 

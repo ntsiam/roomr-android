@@ -3,10 +3,10 @@ package com.app.ariadne.tumaps.map;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.widget.ArrayAdapter;
 
+import androidx.core.app.ActivityCompat;
 import com.app.ariadne.tumaps.MapsActivity;
 import com.app.ariadne.tumaps.MapsConfiguration;
 import com.app.ariadne.tumaps.RequestLocalizationTask;

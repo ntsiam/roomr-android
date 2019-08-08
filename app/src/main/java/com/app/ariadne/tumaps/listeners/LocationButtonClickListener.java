@@ -3,8 +3,8 @@ package com.app.ariadne.tumaps.listeners;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.LocationManager;
-import android.support.v4.app.ActivityCompat;
 
+import androidx.core.app.ActivityCompat;
 import com.app.ariadne.tumaps.MapsActivity;
 import com.google.android.gms.maps.GoogleMap;
 
